@@ -1,7 +1,7 @@
 [project]
 name = "recipe"
 version = "0.1.0"
-description = "Add your description here"
+description = "Simple recipe book app"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
