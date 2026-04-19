@@ -11,9 +11,16 @@ CREATE TABLE users (
 CREATE TABLE recipes (
     id TEXT PRIMARY KEY,
     owner_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+
     title TEXT NOT NULL,
     description TEXT,
+
     tags TEXT[] DEFAULT '{}',
+
+    equipment JSONB DEFAULT '[]',
+    notes JSONB DEFAULT '[]',
+    storage JSONB DEFAULT '[]',
+
     time_minutes INTEGER,
     difficulty TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -26,11 +33,15 @@ CREATE TABLE ingredients (
     recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,
 
     name TEXT NOT NULL,
-    amount REAL,
-    unit TEXT,
-    CONSTRAINT positive_amount CHECK (amount IS NULL OR amount > 0)
-);
 
+    amount TEXT,
+    amount_value REAL,
+
+    unit TEXT,
+
+    CONSTRAINT positive_amount
+        CHECK (amount_value IS NULL OR amount_value > 0)
+);
 CREATE TABLE steps (
     id TEXT PRIMARY KEY,
     recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,

@@ -1,12 +1,14 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List
+
+from utils.constants import settings, TAG_PATTERN
 
 
 class Ingredient(BaseModel):
     name: str
-    amount: float | None = None
+    amount: str | None = None
+    amount_value: float | None = None
     unit: str | None = None
-
 
 class Step(BaseModel):
     step_order: int
@@ -25,17 +27,44 @@ class RecipeBase(BaseModel):
     description: str | None = None
     ingredients: List[Ingredient]
     steps: List[Step]
-    tags: List[str] = []
+    tags: List[str] = Field(default_factory=list)
     time_minutes: int | None = None
     difficulty: str | None = None
 
+    equipment: List[str] = Field(default_factory=list)
+    notes: List[str] = Field(default_factory=list)
+    storage: List[str] = Field(default_factory=list)
+
     @field_validator("tags", mode="before")
-    def lowercase_unique_tags(cls, v):
-        """Make all tags lowercase and remove duplicates"""
-        # NOTE: order of the list may change.
+    def normalize_tags(cls, v):
         if not v:
             return []
-        return list(set(tag.lower() for tag in v))
+
+        if not isinstance(v, list):
+            raise ValueError("tags must be a list")
+
+        return [str(tag).lower().strip() for tag in v]
+
+    @field_validator("tags")
+    def validate_tags(cls, v):
+        if len(v) > settings.TAG_MAX_COUNT:
+            raise ValueError(f"max {settings.TAG_MAX_COUNT} tags allowed")
+
+        seen = set()
+        result = []
+
+        for tag in v:
+            if len(tag) > settings.TAG_MAX_LENGTH:
+                raise ValueError(f"tag too long: {tag}")
+
+            if not TAG_PATTERN.match(tag):
+                raise ValueError(f"invalid tag: {tag}")
+
+            if tag not in seen:
+                seen.add(tag)
+                result.append(tag)
+
+        return result
 
 
 class RecipeCreate(RecipeBase):
