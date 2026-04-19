@@ -10,6 +10,7 @@ class Ingredient(BaseModel):
     amount_value: float | None = None
     unit: str | None = None
 
+
 class Step(BaseModel):
     step_order: int
     description: str

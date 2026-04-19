@@ -17,8 +17,6 @@ def parse_quantity(qty: str) -> Optional[float]:
     try:
         if " " in qty:
             parts = qty.split()
-            print(parts)
-            print(f"DEBUG: {sum(float(Fraction(p)) for p in parts)}")
             return sum(float(Fraction(p)) for p in parts)
 
         return float(Fraction(qty))
@@ -28,6 +26,7 @@ def parse_quantity(qty: str) -> Optional[float]:
             return float(qty)
         except Exception:
             return None
+
 
 def split_unit_and_name(text: str) -> Tuple[Optional[str], str]:
     """Split unit and ingredient name using simple heuristic."""
@@ -42,6 +41,7 @@ def split_unit_and_name(text: str) -> Tuple[Optional[str], str]:
         return first, " ".join(parts[1:])
 
     return None, text.strip()
+
 
 def parse_ingredient_line(line: str) -> Ingredient:
     """Parse a single ingredient line into structured Ingredient."""

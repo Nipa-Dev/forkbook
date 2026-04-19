@@ -59,9 +59,11 @@ async def import_recipe(conn: GetConnection, file: UploadFile = File(...)):
     recipe = parse_recipe(md)
     return await create_recipe(conn, recipe)
 
+
 @router.post("/", response_model=RecipeRead)
 async def add_recipe(conn: GetConnection, recipe: RecipeCreate):
     return await create_recipe(conn, recipe)
+
 
 @router.get("/{recipe_id}", response_model=RecipeRead)
 async def get_recipe(conn: GetConnection, recipe_id: str):
