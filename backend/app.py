@@ -1,5 +1,6 @@
 from endpoints import recipe
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 # Allow frontend dev server to call backend APIs
 app.add_middleware(
     CORSMiddleware,

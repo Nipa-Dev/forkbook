@@ -1,4 +1,7 @@
 import uuid
+
+from psycopg.rows import dict_row
+from psycopg.types.json import Json
 from utils.schemas import RecipeCreate, RecipeRead
 
 
@@ -10,9 +13,10 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
             """
             INSERT INTO recipes (
                 id, owner_id, title, description,
-                tags, time_minutes, difficulty
+                tags, time_minutes, difficulty, image_url,
+                equipment, notes, storage
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 recipe_id,
@@ -22,46 +26,83 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
                 recipe.tags,
                 recipe.time_minutes,
                 recipe.difficulty,
+                recipe.image_url if recipe.image_url else None,
+                Json(recipe.equipment),
+                Json(recipe.notes),
+                Json(recipe.storage),
             ),
         )
 
-        for ing in recipe.ingredients:
+        for comp in recipe.components:
+            comp_id = str(uuid.uuid4())
+
             await cur.execute(
                 """
-                INSERT INTO ingredients (
-                    id, recipe_id, name, amount, amount_value, unit
+                INSERT INTO recipe_components (
+                    id, recipe_id, name, component_order
                 )
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s)
                 """,
                 (
-                    str(uuid.uuid4()),
+                    comp_id,
                     recipe_id,
-                    ing.name,
-                    ing.amount,
-                    ing.amount_value,
-                    ing.unit,
+                    comp.name,
+                    comp.component_order,
                 ),
             )
 
-        for step in recipe.steps:
-            await cur.execute(
-                """
-                INSERT INTO steps (
-                    id, recipe_id, step_order,
-                    description, timer_seconds
+            for ing in comp.ingredients:
+                await cur.execute(
+                    """
+                    INSERT INTO ingredients (
+                        id, component_id, name,
+                        amount, amount_value, unit
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        str(uuid.uuid4()),
+                        comp_id,
+                        ing.name,
+                        ing.amount,
+                        ing.amount_value,
+                        ing.unit,
+                    ),
                 )
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (
-                    str(uuid.uuid4()),
-                    recipe_id,
-                    step.step_order,
-                    step.description,
-                    step.timer_seconds,
-                ),
-            )
+
+            for step in comp.steps:
+                await cur.execute(
+                    """
+                    INSERT INTO steps (
+                        id, component_id, step_order,
+                        description, timer_seconds
+                    )
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        str(uuid.uuid4()),
+                        comp_id,
+                        step.step_order,
+                        step.description,
+                        step.timer_seconds,
+                    ),
+                )
 
     return RecipeRead(
         id=recipe_id,
         **recipe.model_dump(),
     )
+
+
+async def get_recipe_ids(conn) -> list[str]:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT id
+            FROM recipes
+            ORDER BY created_at DESC
+            """
+        )
+        rows = await cur.fetchall()
+
+    return [row["id"] for row in rows]

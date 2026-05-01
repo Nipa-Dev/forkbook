@@ -23,15 +23,25 @@ CREATE TABLE recipes (
 
     time_minutes INTEGER,
     difficulty TEXT,
+    image_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT positive_time CHECK (time_minutes IS NULL OR time_minutes > 0)
 );
 
-CREATE TABLE ingredients (
+CREATE TABLE recipe_components (
     id TEXT PRIMARY KEY,
     recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,
 
+    name TEXT NOT NULL,
+    component_order INTEGER NOT NULL,
+
+    CONSTRAINT unique_component_order UNIQUE (recipe_id, component_order)
+);
+
+CREATE TABLE ingredients (
+    id TEXT PRIMARY KEY,
+    component_id TEXT REFERENCES recipe_components(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
 
     amount TEXT,
@@ -44,17 +54,18 @@ CREATE TABLE ingredients (
 );
 CREATE TABLE steps (
     id TEXT PRIMARY KEY,
-    recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,
+    component_id TEXT REFERENCES recipe_components(id) ON DELETE CASCADE,
 
     step_order INTEGER NOT NULL,
     description TEXT NOT NULL,
     timer_seconds INTEGER,
 
-    CONSTRAINT unique_step_order UNIQUE (recipe_id, step_order)
+    CONSTRAINT unique_step_order UNIQUE (component_id, step_order)
 );
 
 
 CREATE INDEX idx_ingredients_name ON ingredients(name);
-CREATE INDEX idx_ingredients_recipe ON ingredients(recipe_id);
-CREATE INDEX idx_steps_recipe ON steps(recipe_id);
+CREATE INDEX idx_ingredients_component ON ingredients(component_id);
+CREATE INDEX idx_components_recipe_order ON recipe_components(recipe_id, component_order);
+CREATE INDEX idx_steps_component ON steps(component_id);
 CREATE INDEX idx_recipes_owner ON recipes(owner_id);

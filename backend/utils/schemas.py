@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List
-
-from utils.constants import settings, TAG_PATTERN
+from utils.constants import TAG_PATTERN, settings
 
 
 class Ingredient(BaseModel):
@@ -23,18 +21,28 @@ class Step(BaseModel):
         return v
 
 
+class RecipeComponent(BaseModel):
+    name: str
+    component_order: int
+
+    ingredients: list[Ingredient] = Field(default_factory=list)
+    steps: list[Step] = Field(default_factory=list)
+
+
 class RecipeBase(BaseModel):
     title: str
     description: str | None = None
-    ingredients: List[Ingredient]
-    steps: List[Step]
-    tags: List[str] = Field(default_factory=list)
+
+    components: list[RecipeComponent] = Field(default_factory=list)
+
+    tags: list[str] = Field(default_factory=list)
     time_minutes: int | None = None
     difficulty: str | None = None
 
-    equipment: List[str] = Field(default_factory=list)
-    notes: List[str] = Field(default_factory=list)
-    storage: List[str] = Field(default_factory=list)
+    image_url: str | None = None
+    equipment: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    storage: list[str] = Field(default_factory=list)
 
     @field_validator("tags", mode="before")
     def normalize_tags(cls, v):
@@ -78,5 +86,5 @@ class RecipeRead(RecipeBase):
 
 class UserBase(BaseModel):
     id: str
-    name: str
+    username: str
     email: str
