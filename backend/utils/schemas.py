@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
+from datetime import datetime
 from utils.constants import TAG_PATTERN, settings
 
 
@@ -82,6 +83,26 @@ class RecipeCreate(RecipeBase):
 
 class RecipeRead(RecipeBase):
     id: str
+
+
+class RecipeRatingCreate(BaseModel):
+    recipe_id: str
+    rating: int
+
+    @field_validator("rating")
+    def validate_rating(cls, v):
+        if not 1 <= v <= 5:
+            raise ValueError("rating must be between 1 and 5")
+        return v
+
+
+class RecipeRatingRead(BaseModel):
+    id: str
+    recipe_id: str
+    user_id: str
+    rating: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class UserBase(BaseModel):
