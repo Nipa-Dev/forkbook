@@ -7,7 +7,6 @@ CREATE TABLE users (
     hashed_password TEXT NOT NULL
 );
 
-
 CREATE TABLE recipes (
     id TEXT PRIMARY KEY,
     owner_id TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -68,16 +67,14 @@ CREATE TABLE recipe_ratings (
 
     recipe_id TEXT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    
+
     rating INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    
+
     CONSTRAINT rating_range CHECK (rating >= 1 AND rating <= 5),
     CONSTRAINT unique_user_recipe_rating UNIQUE (recipe_id, user_id)
 );
-
-
 
 CREATE INDEX idx_ingredients_name ON ingredients(name);
 CREATE INDEX idx_ingredients_component ON ingredients(component_id);
@@ -86,4 +83,3 @@ CREATE INDEX idx_steps_component ON steps(component_id);
 CREATE INDEX idx_recipes_owner ON recipes(owner_id);
 CREATE INDEX idx_ratings_recipe ON recipe_ratings(recipe_id);
 CREATE INDEX idx_ratings_user ON recipe_ratings(user_id);
-
