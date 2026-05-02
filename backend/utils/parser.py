@@ -1,6 +1,6 @@
 import re
 from fractions import Fraction
-from typing import Any  # Self is useful for factory methods if needed
+from typing import Any
 
 import yaml
 from utils.schemas import Ingredient, RecipeComponent, RecipeCreate, Step
