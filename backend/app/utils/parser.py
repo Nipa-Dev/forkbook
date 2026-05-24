@@ -3,7 +3,8 @@ from fractions import Fraction
 from typing import Any
 
 import yaml
-from utils.schemas import Ingredient, RecipeComponent, RecipeCreate, Step
+
+from app.schemas.recipe import Ingredient, RecipeComponent, RecipeCreate, Step
 
 # Matches Component headers (### Component Name)
 COMPONENT_RE = re.compile(r"^###\s+(?!Notes|Storage)(.+)$", re.MULTILINE)
@@ -39,7 +40,7 @@ def split_unit_and_name(text: str) -> tuple[str | None, str]:
         return None, ""
 
     first = parts[0].lower()
-    # Simple heuristic: units are usually short
+    # units are usually short
     if len(parts) > 1 and len(first) <= 5:
         return first, " ".join(parts[1:])
 
@@ -90,7 +91,7 @@ def parse_steps(text: str) -> list[Step]:
         line = line.strip()
         if not line:
             continue
-        # Remove leading numbers like "1. "
+        # Remove leading numbers
         line = re.sub(r"^\d+\.\s*", "", line)
         result.append(Step(step_order=order, description=line))
         order += 1

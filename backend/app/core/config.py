@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
+    SECRET_KEY: str
+    REFRESH_SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    EMAIL_BIDX_SECRET: str
 
     TAG_MAX_COUNT: int = 5
     TAG_MAX_LENGTH: int = 15

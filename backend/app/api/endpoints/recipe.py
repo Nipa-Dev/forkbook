@@ -1,9 +1,10 @@
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from psycopg.rows import dict_row
-from utils.dependencies import GetConnection
-from utils.parser import parse_recipe
-from utils.schemas import RecipeCreate, RecipeRead
-from utils.services.recipes import create_recipe, get_recipe_ids
+from uuid import UUID
+from app.core.dependencies import GetConnection
+from app.utils.parser import parse_recipe
+from app.schemas.recipe import RecipeCreate, RecipeRead
+from app.services.recipes import create_recipe, get_recipe_ids
 
 router = APIRouter()
 
@@ -83,13 +84,16 @@ async def get_recipes(
                         "steps": steps,
                     }
                 )
-
-            result.append(
-                RecipeRead(
-                    **recipe,
-                    components=full_components,
+            try:
+                result.append(
+                    RecipeRead(
+                        **recipe,
+                        components=full_components,
+                    )
                 )
-            )
+            except Exception as e:
+                print(e)
+                raise
 
     return result
 
@@ -112,7 +116,7 @@ async def list_recipe_ids(conn: GetConnection):
 
 
 @router.get("/{recipe_id}", response_model=RecipeRead)
-async def get_recipe(conn: GetConnection, recipe_id: str):
+async def get_recipe(conn: GetConnection, recipe_id: UUID):
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             "SELECT * FROM recipes WHERE id = %s",

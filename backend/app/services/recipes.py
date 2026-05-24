@@ -1,28 +1,38 @@
 import uuid
+import unicodedata
+import re
 
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
-from utils.schemas import RecipeCreate, RecipeRead
+from app.schemas.recipe import RecipeCreate, RecipeRead
+
+def slugify(title: str) -> str:
+    title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')    
+    title = title.lower()
+    title = re.sub(r'[^a-z0-9]+', '-', title)
+    
+    return title.strip('-')
 
 
 async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
     recipe_id = str(uuid.uuid4())
-
+    slug = slugify(recipe.title)
     async with conn.cursor() as cur:
         await cur.execute(
             """
             INSERT INTO recipes (
-                id, owner_id, title, description,
+                id, owner_id, title, description, slug,
                 tags, time_minutes, difficulty, image_url,
                 equipment, notes, storage
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 recipe_id,
                 None,
                 recipe.title,
                 recipe.description,
+                slug,
                 recipe.tags,
                 recipe.time_minutes,
                 recipe.difficulty,
@@ -105,4 +115,4 @@ async def get_recipe_ids(conn) -> list[str]:
         )
         rows = await cur.fetchall()
 
-    return [row["id"] for row in rows]
+    return [str(row["id"]) for row in rows]
