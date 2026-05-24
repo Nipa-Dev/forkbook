@@ -1,9 +1,16 @@
 <script>
-	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+  import "../app.css";
+  import { ModeWatcher } from "mode-watcher";
 
-	let { children } = $props();
+  import ModeToggle from "$lib/components/ModeToggle.svelte";
+
+  let { children } = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 {@render children()}
+
+<div class="fixed right-4 top-4 z-50">
+  <ModeToggle />
+</div>
+
+<ModeWatcher />
