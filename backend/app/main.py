@@ -1,14 +1,13 @@
-from app.api.endpoints import recipe
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import psycopg_pool
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.endpoints import recipe
 from app.core.config import get_database_url
 from app.core.dependencies import State
-import psycopg_pool
 
 
 @asynccontextmanager
@@ -19,11 +18,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-BASE_DIR = Path(__file__).resolve().parent
-if BASE_DIR.name == "app":
-    BASE_DIR = BASE_DIR.parent
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 # Allow frontend dev server to call backend APIs
 app.add_middleware(
     CORSMiddleware,

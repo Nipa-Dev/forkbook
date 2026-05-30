@@ -19,4 +19,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "niquests>=3.18.2",
+    "pillow>=12.2.0",
 ]

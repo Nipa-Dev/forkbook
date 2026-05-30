@@ -6,12 +6,15 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Json
 from app.schemas.recipe import RecipeCreate, RecipeRead
 
+
 def slugify(title: str) -> str:
-    title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')    
+    title = (
+        unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    )
     title = title.lower()
-    title = re.sub(r'[^a-z0-9]+', '-', title)
-    
-    return title.strip('-')
+    title = re.sub(r"[^a-z0-9]+", "-", title)
+
+    return title.strip("-")
 
 
 async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:

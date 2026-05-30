@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.schemas.recipe import RecipeRatingCreate
+from app.schemas.rating import RecipeRatingCreate
 
 router = APIRouter()
 
