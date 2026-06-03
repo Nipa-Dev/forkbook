@@ -27,7 +27,11 @@
 
 <div class="p-4 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
   {#each data.recipes as recipe (recipe.id)}
-    <a href={`/recipes/${recipe.id}`} class="block h-full">
+    <a
+      href={`/recipes/${recipe.id}`}
+      data-sveltekit-preload-data="tap"
+      class="block h-full"
+    >
       <Card.Root class="h-full overflow-hidden hover:shadow-md transition">
         {#if recipe.image_url}
           <img
