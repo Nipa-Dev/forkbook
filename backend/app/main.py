@@ -5,7 +5,7 @@ import psycopg_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import recipe
+from app.api.endpoints import recipe, security
 from app.core.config import get_database_url
 from app.core.dependencies import State
 
@@ -29,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(recipe.router, prefix="/recipes", tags=["recipes"])
+app.include_router(security.router, prefix="/auth")
 
 
 @app.get("/")

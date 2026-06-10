@@ -1,10 +1,12 @@
+from uuid import UUID
+
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from psycopg.rows import dict_row
-from uuid import UUID
+
 from app.core.dependencies import GetConnection
-from app.utils.parser import parse_recipe
 from app.schemas.recipe import RecipeCreate, RecipeRead
 from app.services.recipes import create_recipe, get_recipe_ids
+from app.utils.parser import parse_recipe
 
 router = APIRouter()
 
@@ -14,6 +16,7 @@ async def get_recipes(
     conn: GetConnection,
     tag: list[str] | None = Query(default=None),
     search: str | None = Query(default=None),
+    count: int | None = Query(default=10, ge=1, le=100),
 ):
     result = []
 
@@ -33,7 +36,8 @@ async def get_recipes(
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-
+        query += " LIMIT %s"
+        params.append(count)
         await cur.execute(query, params)
         recipes = await cur.fetchall()
 

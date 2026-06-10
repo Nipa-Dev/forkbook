@@ -1,11 +1,12 @@
-from pydantic import BaseModel, Field, field_validator
-from app.core.config import TAG_PATTERN, settings
-
 from uuid import UUID
+
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.config import TAG_PATTERN, settings
 
 
 class Ingredient(BaseModel):
-    name: str
+    name: str = Field(min_length=2, max_length=60)
     amount: str | None = None
     amount_value: float | None = None
     unit: str | None = None
@@ -24,7 +25,7 @@ class Step(BaseModel):
 
 
 class RecipeComponent(BaseModel):
-    name: str
+    name: str = Field(min_length=2, max_length=60)
     component_order: int
 
     ingredients: list[Ingredient] = Field(default_factory=list)
@@ -32,7 +33,7 @@ class RecipeComponent(BaseModel):
 
 
 class RecipeBase(BaseModel):
-    title: str
+    title: str = Field(min_length=3, max_length=60)
     description: str | None = None
 
     components: list[RecipeComponent] = Field(default_factory=list)

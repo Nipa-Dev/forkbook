@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from typing import Annotated
 from uuid import UUID
 
@@ -8,10 +9,12 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from psycopg.rows import dict_row
 from pwdlib import PasswordHash
 
 from app.core.config import settings
-from app.schemas.user import UserInDB
+from app.core.dependencies import GetConnection
+from app.schemas.user import UserInDB, UserRead
 
 password_hash = PasswordHash.recommended()
 
@@ -48,41 +51,59 @@ def compute_email_blind_index(email: str) -> str:
     return digest
 
 
+def decrypt_email(email_enc: bytes | str, key_version: int) -> str:
+    if isinstance(email_enc, bytes):
+        email_str = email_enc.decode("utf-8")
+    else:
+        email_str = email_enc
+
+    original_email = email_str.removeprefix("ENC_")
+
+    return original_email
+
+
 async def get_user_by_id(
-    conn,
+    conn: GetConnection,
     user_id: UUID,
-) -> UserInDB | None: ...
+) -> UserInDB | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute("SELECT * FROM users where user_id = %s", (user_id,))
+        row = await cur.fetchone()
+        return UserInDB(**row) if row else None
 
 
 async def get_user_by_username(
-    conn,
-    username_normalized: str,
-) -> UserInDB | None: ...
+    conn: GetConnection, username_normalized: str
+) -> UserInDB | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            "SELECT * FROM users WHERE username_normalized = %s", (username_normalized,)
+        )
+        row = await cur.fetchone()
+        return UserInDB(**row) if row else None
 
 
 async def get_user_by_email_bidx(
-    conn,
-    email_bidx: str,
-) -> UserInDB | None: ...
+    conn: GetConnection, email_bidx: str
+) -> UserInDB | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute("SELECT * FROM users WHERE email_bidx = %s", (email_bidx,))
+        row = await cur.fetchone()
+        return UserInDB(**row) if row else None
 
 
 async def authenticate_user(
-    conn,
+    conn: GetConnection,
     identifier: str,
     password: str,
-) -> UserInDB | None:
+):  # -> UserInDB | None:
     identifier = identifier.strip().casefold()
 
     user = None
 
     if "@" in identifier:
         email_bidx = compute_email_blind_index(identifier)
-
-        user = await get_user_by_email_bidx(
-            conn,
-            email_bidx,
-        )
-
+        user = await get_user_by_email_bidx(conn, email_bidx)
     else:
         username_normalized = normalize_username(identifier)
 
@@ -113,7 +134,7 @@ def create_access_token(
     expire = (
         now + expires_delta
         if expires_delta
-        else now + timedelta(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        else now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     payload = {
@@ -134,7 +155,7 @@ def create_access_token(
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    conn,
+    conn: GetConnection,
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -170,3 +191,39 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+
+
+@lru_cache(maxsize=1024)
+def _cache_profile(
+    user_id: UUID,
+    username: str,
+    email_enc: bytes,
+    key_version: int,
+    created_at: datetime,
+    updated_at: datetime,
+) -> UserRead:
+    decrypted_email = decrypt_email(email_enc, key_version)
+
+    return UserRead(
+        user_id=user_id,
+        username=username,
+        email=decrypted_email,
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+
+
+async def get_current_active_user(
+    current_user: Annotated[UserInDB, Depends(get_current_user)],
+) -> UserRead:
+    return _cache_profile(
+        current_user.user_id,
+        current_user.username,
+        current_user.email_enc,
+        current_user.key_version,
+        current_user.created_at,
+        current_user.updated_at,
+    )
+    # user_dict = current_user.model_dump()
+    # user_dict["email"] = decrypt_email(user_dict["email_enc"], 1)
+    # return UserRead(**user_dict)
