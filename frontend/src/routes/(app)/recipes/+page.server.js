@@ -1,6 +1,6 @@
 import { api } from '$lib/server/api';
 
-export async function load({ url }) {
+export async function load({ url, fetch }) {
     try {
         const tag = url.searchParams.get('tag');
         const search = url.searchParams.get('search');
@@ -15,7 +15,7 @@ export async function load({ url }) {
             : '';
 
         return {
-            recipes: await api(`/recipes/${query}`)
+            recipes: await api(`/recipes/${query}`, {}, fetch)
         };
     } catch (e) {
         console.error(e);

@@ -1,7 +1,9 @@
-const API_URL = "http://127.0.0.1:8000"
+const API_URL = "http://127.0.0.1:8000";
 
-export async function api(path, options = {}) {
-    const res = await fetch(`${API_URL}${path}`, {
+export async function api(path, options = {}, svelteFetch = null) {
+    const fetcher = svelteFetch || fetch;
+
+    const res = await fetcher(`${API_URL}${path}`, {
         ...options,
         headers: {
             'content-type': 'application/json',

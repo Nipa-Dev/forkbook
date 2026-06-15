@@ -2,26 +2,46 @@ import { fail, redirect } from "@sveltejs/kit";
 import { api } from "$lib/server/api.js";
 
 export const actions = {
-    login: async ({ request, cookies, url }) => {
+    signup: async ({ request, cookies, url }) => {
         const data = await request.formData();
         const username = data.get("username");
         const password = data.get("password");
+        const passwordConfirm = data.get("password-confirm");
+        const email = data.get("email");
 
-        if (!username || !password) {
+        if (password !== passwordConfirm) {
+            return fail(400, { message: "Passwords do not match" });
+        }
+        
+        if (!username || !password || !email) {
             return fail(400, { message: "Email and password are required" });
         }
 
         try {
-            const apiFormData = new URLSearchParams();
-            apiFormData.append("username", username.toString());
-            apiFormData.append("password", password.toString());
+            const apiPayload = {
+                    username: username.toString(),
+                    email: email.toString(),
+                    password: password.toString()
+                };
 
+
+            const registerResponse = await api("/auth/add-user", {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                },
+                body: JSON.stringify(apiPayload),
+            });
+
+            const tokenFormData = new URLSearchParams();
+            tokenFormData.append("username", username.toString());
+            tokenFormData.append("password", password.toString());
             const responseData = await api("/auth/token", {
                 method: "POST",
                 headers: {
                     "content-type": "application/x-www-form-urlencoded",
                 },
-                body: apiFormData.toString()
+                body: tokenFormData.toString(),
             });
             const { access_token } = responseData;
 

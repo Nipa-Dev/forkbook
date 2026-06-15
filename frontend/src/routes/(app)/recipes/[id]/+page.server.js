@@ -1,6 +1,6 @@
 import { api } from "$lib/server/api";
 
-export async function load({ params, url }) {
+export async function load({ params, url, fetch}) {
   const tag = url.searchParams.get("tag");
   const search = url.searchParams.get("search");
   const layout = url.searchParams.get("layout") || "A";
@@ -15,7 +15,7 @@ export async function load({ params, url }) {
     ? `?${forwardParams.toString()}`
     : "";
 
-  const recipeData = await api(`/recipes/${params.id}${queryString}`);
+  const recipeData = await api(`/recipes/${params.id}${queryString}`, {}, fetch);
 
   return {
     recipe: recipeData,
