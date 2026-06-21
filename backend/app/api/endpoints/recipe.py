@@ -4,24 +4,25 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from psycopg.rows import dict_row
 
 from app.core.dependencies import GetConnection
-from app.schemas.recipe import RecipeCreate, RecipeRead
+from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes
 from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.parser import parse_recipe
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[RecipeRead])
+@router.get("/", response_model=PaginatedRecipes)
 async def get_recipes(
     conn: GetConnection,
     tag: list[str] | None = Query(default=None),
     search: str | None = Query(default=None),
-    count: int | None = Query(default=10, ge=1, le=100),
+    page_size: int = Query(default=10, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
 ):
     result = []
+    offset = (page - 1) * page_size
 
     async with conn.cursor(row_factory=dict_row) as cur:
-        query = "SELECT * FROM recipes"
         conditions = []
         params = []
 
@@ -34,13 +35,30 @@ async def get_recipes(
             like = f"%{search}%"
             params.extend([like, like])
 
+        where_clause = ""
         if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-        query += " LIMIT %s"
-        params.append(count)
-        await cur.execute(query, params)
-        recipes = await cur.fetchall()
+            where_clause += " WHERE " + " AND ".join(conditions)
 
+        count_query = f"""
+            SELECT COUNT(*) AS total
+            FROM recipes
+            {where_clause}
+        """
+
+        await cur.execute(count_query, params)
+        total = (await cur.fetchone())["total"]
+
+        recipe_query = f"""
+            SELECT *
+            FROM recipes
+            {where_clause}
+            ORDER BY title
+            LIMIT %s
+            OFFSET %s
+        """
+
+        await cur.execute(recipe_query, [*params, page_size, offset])
+        recipes = await cur.fetchall()
         for recipe in recipes:
             recipe_id = recipe["id"]
 
@@ -99,7 +117,12 @@ async def get_recipes(
                 print(e)
                 raise
 
-    return result
+    return PaginatedRecipes(
+        items=result,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.post("/import", response_model=RecipeRead)

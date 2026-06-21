@@ -85,3 +85,10 @@ class RecipeCreate(RecipeBase):
 
 class RecipeRead(RecipeBase):
     id: UUID
+
+
+class PaginatedRecipes(BaseModel):
+    items: list[RecipeRead]
+    total: int
+    page: int
+    page_size: int

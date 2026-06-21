@@ -82,7 +82,7 @@
           <img
             src={recipe.image_url}
             alt={recipe.title}
-            class="w-full aspect-square object-cover"
+            class="w-full aspect-4/3 object-cover"
           />
         </div>
       {/if}

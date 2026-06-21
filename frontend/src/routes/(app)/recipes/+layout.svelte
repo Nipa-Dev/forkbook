@@ -15,7 +15,6 @@
 
 <Sidebar.Provider>
   <div class="flex min-h-screen">
-    <!--<AppSidebar />-->
     <div class="hidden lg:block">
       <AppSidebar />
     </div>
@@ -25,10 +24,3 @@
     </Sidebar.Inset>
   </div>
 </Sidebar.Provider>
-
-<!-- global on all pages
-<div class="fixed right-4 top-4 z-50">
-  <ModeToggle />
-</div>
-
-<ModeWatcher /> -->

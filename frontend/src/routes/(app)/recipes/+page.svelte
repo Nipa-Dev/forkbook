@@ -1,11 +1,11 @@
 <script>
+  import { page } from "$app/state";
   import * as Card from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
   import RecipeSearch from "$lib/components/RecipeSearch.svelte";
-
+  import * as Pagination from "$lib/components/ui/pagination";
   let { data } = $props();
 
-  // Helper to sum ingredients across all components
   const getIngredientCount = (recipe) => {
     return (
       recipe.components?.reduce(
@@ -14,19 +14,28 @@
       ) ?? 0
     );
   };
+  
+  const totalPages = $derived(Math.ceil(data.recipes.total / data.recipes.page_size));
+
+  const buildPageUrl = (newPage) => {
+    const params = new URLSearchParams(page.url.searchParams);
+    params.set("page", newPage);
+    return `?${params.toString()}`;
+  };
+
+  const pages = $derived.by(() =>
+    Array.from({ length: totalPages }, (_, i) => i + 1)
+  );
+
 </script>
 
-<!--
-<div class="absolute right-4 top-4">
-  <ModeToggle />
-</div> -->
 
 <div class="p-4 flex justify-between items-center">
   <RecipeSearch />
 </div>
 
 <div class="p-4 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-  {#each data.recipes as recipe (recipe.id)}
+  {#each data.recipes.items as recipe (recipe.id)}
     <a
       href={`/recipes/${recipe.id}`}
       data-sveltekit-preload-data="tap"
@@ -37,12 +46,12 @@
           <img
             src={recipe.image_url}
             alt={recipe.title}
-            class="w-full aspect-4/3 max-h-40 object-cover"
+            class="w-full aspect-4/3 lg:aspect-video object-cover"
             loading="lazy"
           />
         {:else}
           <div
-            class="w-full aspect-4/3 max-h-40 bg-muted flex items-center justify-center text-sm text-muted-foreground"
+            class="w-full aspect-4/3 lg:aspect-video bg-muted flex items-center justify-center text-sm text-muted-foreground"
           >
             No image
           </div>
@@ -87,3 +96,47 @@
     </a>
   {/each}
 </div>
+{#if totalPages > 1}
+  <Pagination.Root class="py-6">
+    <Pagination.Content>
+
+      {#if data.recipes.page > 1}
+        <Pagination.Item>
+          <a
+            href={buildPageUrl(data.recipes.page - 1)}
+            class="inline-flex h-9 items-center rounded-md px-3 text-sm hover:bg-accent"
+          >
+            Previous
+          </a>
+        </Pagination.Item>
+      {/if}
+
+      {#each pages as pageNumber}
+        <Pagination.Item>
+          <a
+            href={buildPageUrl(pageNumber)}
+            class={`inline-flex h-9 w-9 items-center justify-center rounded-md text-sm ${
+              pageNumber === data.recipes.page
+                ? "border bg-background"
+                : "hover:bg-accent"
+            }`}
+          >
+            {pageNumber}
+          </a>
+        </Pagination.Item>
+      {/each}
+
+      {#if data.recipes.page < totalPages}
+        <Pagination.Item>
+          <a
+            href={buildPageUrl(data.recipes.page + 1)}
+            class="inline-flex h-9 items-center rounded-md px-3 text-sm hover:bg-accent"
+          >
+            Next
+          </a>
+        </Pagination.Item>
+      {/if}
+
+    </Pagination.Content>
+  </Pagination.Root>
+{/if}
