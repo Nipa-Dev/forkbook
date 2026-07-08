@@ -109,6 +109,23 @@ CREATE TABLE refresh_token_sessions (
     ip_address TEXT
 );
 
+CREATE VIEW recipe_rating_stats AS
+SELECT 
+    r.id AS recipe_id,
+    COALESCE(AVG(rr.rating), 0.0)::NUMERIC(3,2) AS average_rating,
+    COUNT(rr.id)::INTEGER AS total_ratings
+FROM recipes r
+LEFT JOIN recipe_ratings rr ON r.id = rr.recipe_id
+GROUP BY r.id;
+
+CREATE VIEW recipes_with_ratings AS
+SELECT 
+    r.*, 
+    v.average_rating, 
+    v.total_ratings
+FROM recipes r
+JOIN recipe_rating_stats v ON r.id = v.recipe_id;
+
 CREATE INDEX idx_refresh_user_id ON refresh_token_sessions(user_id);
 CREATE INDEX idx_refresh_token_hash ON refresh_token_sessions(token_hash);
 
