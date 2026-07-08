@@ -2,9 +2,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from psycopg.rows import dict_row
+from psycopg.types.json import Json
 
 from app.core.dependencies import GetConnection
-from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes
+from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes, RecipeUpdate
 from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.parser import parse_recipe
 
@@ -50,7 +51,7 @@ async def get_recipes(
 
         recipe_query = f"""
             SELECT *
-            FROM recipes
+            FROM recipes_with_ratings
             {where_clause}
             ORDER BY title
             LIMIT %s
@@ -129,12 +130,18 @@ async def get_recipes(
 async def import_recipe(conn: GetConnection, file: UploadFile = File(...)):
     md = (await file.read()).decode("utf-8")
     recipe = parse_recipe(md)
-    return await create_recipe(conn, recipe)
+    created_recipe = await create_recipe(conn, recipe)
+    return RecipeRead(
+        **created_recipe.model_dump(),
+    )
 
 
 @router.post("/", response_model=RecipeRead)
 async def add_recipe(conn: GetConnection, recipe: RecipeCreate):
-    return await create_recipe(conn, recipe)
+    created_recipe = await create_recipe(conn, recipe)
+    return RecipeRead(
+        **created_recipe.model_dump(), average_rating=0.0, total_ratings=0
+    )
 
 
 @router.get("/ids", response_model=list[str])
@@ -146,7 +153,7 @@ async def list_recipe_ids(conn: GetConnection):
 async def get_recipe(conn: GetConnection, recipe_id: UUID):
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
-            "SELECT * FROM recipes WHERE id = %s",
+            "SELECT * FROM recipes_with_ratings WHERE id = %s",
             (recipe_id,),
         )
         recipe = await cur.fetchone()
@@ -217,3 +224,63 @@ async def delete_recipe(conn: GetConnection, recipe_id: str):
             raise HTTPException(status_code=404, detail="Recipe not found")
 
     return {"deleted_id": recipe_id}
+
+
+def csv_to_list(value):
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return []
+
+
+@router.patch("/{recipe_id}")
+async def update_recipe(
+    conn: GetConnection,
+    recipe_id: UUID,
+    recipe: RecipeUpdate,
+):
+    JSON_FIELDS = {"equipment", "notes", "storage"}
+    ARRAY_FIELDS = {"tags"}
+
+    updates = recipe.model_dump(exclude_unset=True, exclude_none=True)
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided")
+
+    fields = []
+    values = []
+
+    for key, value in updates.items():
+        if key in ARRAY_FIELDS:
+            value = csv_to_list(value)
+
+        elif key in JSON_FIELDS:
+            value = csv_to_list(value)
+            value = Json(value)
+
+        elif isinstance(value, str):
+            value = value.strip()
+
+        fields.append(f"{key} = %s")
+        values.append(value)
+
+    values.append(recipe_id)
+
+    query = f"""
+        UPDATE recipes
+        SET {", ".join(fields)}
+        WHERE id = %s
+        RETURNING *
+    """
+
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(query, values)
+        updated = await cur.fetchone()
+
+        if not updated:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+
+    return await get_recipe(conn, recipe_id)

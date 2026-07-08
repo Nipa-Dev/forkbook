@@ -85,6 +85,20 @@ class RecipeCreate(RecipeBase):
 
 class RecipeRead(RecipeBase):
     id: UUID
+    average_rating: float = Field(default=0.0)
+    total_ratings: int = Field(default=0)
+
+
+class RecipeUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    time_minutes: int | None = None
+    difficulty: str | None = None
+    image_url: str | None = None
+    tags: list[str] | None = None
+    equipment: list[str] | None = None
+    notes: str | None = None
+    storage: str | None = None
 
 
 class PaginatedRecipes(BaseModel):
