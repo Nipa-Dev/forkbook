@@ -1,14 +1,12 @@
 <script>
-  import { Sun, Moon } from "lucide-svelte";
-  import { resetMode, setMode } from "mode-watcher";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { buttonVariants } from "$lib/components/ui/button/index.js";
+  import { Sun, Moon } from 'lucide-svelte';
+  import { resetMode, setMode } from 'mode-watcher';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import { buttonVariants } from '$lib/components/ui/button/index.js';
 </script>
 
 <DropdownMenu.Root>
-  <DropdownMenu.Trigger
-    class={buttonVariants({ variant: "outline", size: "icon" })}
-  >
+  <DropdownMenu.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
     <Sun
       class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
     />
@@ -21,9 +19,8 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="end">
-    <DropdownMenu.Item onclick={() => setMode("light")}>Light</DropdownMenu.Item
-    >
-    <DropdownMenu.Item onclick={() => setMode("dark")}>Dark</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={() => setMode('light')}>Light</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={() => setMode('dark')}>Dark</DropdownMenu.Item>
     <DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

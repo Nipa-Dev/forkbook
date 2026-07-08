@@ -11,9 +11,7 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 export default defineConfig([
   includeIgnoreFile(gitignorePath),
   {
-    ignores: [
-      'frontend/src/lib/**',
-    ]
+    ignores: ['frontend/src/lib/**']
   },
 
   js.configs.recommended,

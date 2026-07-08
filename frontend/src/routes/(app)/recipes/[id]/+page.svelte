@@ -1,20 +1,16 @@
 <script>
-  import LayoutA from "./layouts/LayoutA.svelte";
-  import LayoutB from "./layouts/LayoutB.svelte";
-  import LayoutC from "./layouts/LayoutC.svelte";
-  import LayoutD from "./layouts/LayoutD.svelte";
+  import LayoutMain from './layouts/LayoutMain.svelte';
+  import LayoutSecondary from './layouts/LayoutSecondary.svelte';
 
   const layouts = {
-    A: LayoutA,
-    B: LayoutB,
-    C: LayoutC,
-    D: LayoutD,
+    main: LayoutMain,
+    secondary: LayoutSecondary
   };
 
   let { data } = $props();
 
   const recipe = $derived(data.recipe);
-  const Layout = $derived(layouts[data.layout] ?? LayoutA);
+  const Layout = $derived(layouts[data.layout] ?? LayoutMain);
 </script>
 
 <Layout {recipe} />
