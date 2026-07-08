@@ -1,14 +1,14 @@
 <script>
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import ModeToggle from "$lib/components/ModeToggle.svelte";
-  import { page } from "$app/state";
+  import { Label } from '$lib/components/ui/label/index.js';
+  import { Input } from '$lib/components/ui/input/index.js';
+  import * as Card from '$lib/components/ui/card/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import ModeToggle from '$lib/components/ModeToggle.svelte';
+  import { page } from '$app/state';
 
   let { form } = $props();
 
-  const redirectTo = page.url.searchParams.get("redirectTo") || "/";
+  const redirectTo = page.url.searchParams.get('redirectTo') || '/';
   const formAction = `?/login&redirectTo=${encodeURIComponent(redirectTo)}`;
 </script>
 
@@ -29,21 +29,12 @@
           {/if}
           <div class="grid gap-2">
             <Label for="email">Email</Label>
-            <Input
-              id="email"
-              name="username"
-              type="email"
-              placeholder="m@example.com"
-              required
-            />
+            <Input id="email" name="username" type="email" placeholder="m@example.com" required />
           </div>
           <div class="grid gap-2">
             <div class="flex items-center">
               <Label for="password">Password</Label>
-              <a
-                href="##"
-                class="ms-auto inline-block text-sm underline-offset-4 hover:underline"
-              >
+              <a href="##" class="ms-auto inline-block text-sm underline-offset-4 hover:underline">
                 Forgot your password?
               </a>
             </div>

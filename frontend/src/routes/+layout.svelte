@@ -1,8 +1,8 @@
 <script>
-  import "../app.css";
-  import { ModeWatcher } from "mode-watcher";
+  import '../app.css';
+  import { ModeWatcher } from 'mode-watcher';
 
-  import ModeToggle from "$lib/components/ModeToggle.svelte";
+  import ModeToggle from '$lib/components/ModeToggle.svelte';
 
   let { children } = $props();
 </script>

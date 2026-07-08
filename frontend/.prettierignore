@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+/src/lib/assets
+/src/lib/components
+/src/lib/hooks

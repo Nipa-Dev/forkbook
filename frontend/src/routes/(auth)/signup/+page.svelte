@@ -1,14 +1,14 @@
 <script>
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import ModeToggle from "$lib/components/ModeToggle.svelte";
-  import { page } from "$app/state";
+  import { Label } from '$lib/components/ui/label/index.js';
+  import { Input } from '$lib/components/ui/input/index.js';
+  import * as Card from '$lib/components/ui/card/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import ModeToggle from '$lib/components/ModeToggle.svelte';
+  import { page } from '$app/state';
 
   let { form } = $props();
 
-  const redirectTo = page.url.searchParams.get("redirectTo") || "/";
+  const redirectTo = page.url.searchParams.get('redirectTo') || '/';
   const formAction = `?/signup&redirectTo=${encodeURIComponent(redirectTo)}`;
 </script>
 
@@ -29,13 +29,7 @@
           {/if}
           <div class="grid gap-2">
             <Label for="username">Username</Label>
-            <Input
-              id="username"
-              name="username"
-              type="username"
-              placeholder="username"
-              required
-            />
+            <Input id="username" name="username" type="username" placeholder="username" required />
           </div>
           <div class="grid gap-2">
             <Label for="email">Email</Label>
