@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.config import settings
-from app.core.dependencies import GetConnection
+from app.utils.config import settings
+from app.utils.dependencies import GetConnection
 from app.schemas.auth import Token
 from app.schemas.user import UserInDB, UserRegister
 from app.utils import auth

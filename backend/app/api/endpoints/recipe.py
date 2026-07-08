@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
-from app.core.dependencies import GetConnection
+from app.utils.dependencies import GetConnection
 from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes, RecipeUpdate
 from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.parser import parse_recipe

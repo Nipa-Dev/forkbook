@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import recipe, security, rating
-from app.core.config import get_database_url
-from app.core.dependencies import State
+from app.utils.config import get_database_url
+from app.utils.dependencies import State
 
 
 @asynccontextmanager

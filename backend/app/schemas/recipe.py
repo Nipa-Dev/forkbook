@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.config import TAG_PATTERN, settings
+from app.utils.config import TAG_PATTERN, settings
 
 
 class Ingredient(BaseModel):

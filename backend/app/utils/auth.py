@@ -12,8 +12,8 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from psycopg.rows import dict_row
 from pwdlib import PasswordHash
 
-from app.core.config import settings
-from app.core.dependencies import GetConnection
+from app.utils.config import settings
+from app.utils.dependencies import GetConnection
 from app.schemas.user import UserInDB, UserRead
 
 password_hash = PasswordHash.recommended()

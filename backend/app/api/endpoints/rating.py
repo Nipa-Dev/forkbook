@@ -7,7 +7,7 @@ from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
 from app.schemas.rating import RecipeRatingCreate
 from app.schemas.user import UserInDB
-from app.core.dependencies import GetConnection
+from app.utils.dependencies import GetConnection
 from app.utils.auth import get_current_active_user
 
 router = APIRouter()
