@@ -142,4 +142,3 @@ CREATE INDEX idx_ratings_user ON recipe_ratings(user_id);
 
 CREATE INDEX idx_recipes_owner ON recipes(owner_id);
 CREATE INDEX idx_recipes_tags ON recipes USING GIN (tags);
-
