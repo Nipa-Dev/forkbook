@@ -5,11 +5,27 @@ from app.schemas.recipe import Ingredient, RecipeComponent, RecipeCreate, Step
 from app.exceptions import InvalidRecipeError
 
 VALID_UNITS = {
-    "g", "kg", "ml", "l", "tbsp", "tsp", "cup", "cups", "oz", "lb", "lbs",
-    "piece", "pieces", "can", "cans", "pinch", "pinches"
+    "g",
+    "kg",
+    "ml",
+    "l",
+    "tbsp",
+    "tsp",
+    "cup",
+    "cups",
+    "oz",
+    "lb",
+    "lbs",
+    "piece",
+    "pieces",
+    "can",
+    "cans",
+    "pinch",
+    "pinches",
 }
 
 # TODO: Add conversion helpers
+
 
 def parse_list_value(key: str, value: str) -> list[str]:
     if key == "tags" and "," in value:
@@ -116,7 +132,9 @@ def parse_directions(directions_raw: str) -> list[Step]:
 
 
 def parse_recipe(full_recipe_text: str) -> RecipeCreate:
-    block_match = re.search(r"<recipe>(.*?)</recipe>", full_recipe_text, flags=re.DOTALL)
+    block_match = re.search(
+        r"<recipe>(.*?)</recipe>", full_recipe_text, flags=re.DOTALL
+    )
 
     if not block_match:
         raise InvalidRecipeError("Recipe is missing the required <recipe> block")
@@ -137,7 +155,9 @@ def parse_recipe(full_recipe_text: str) -> RecipeCreate:
 
     for index, chunk in enumerate(component_chunks, start=1):
         title_match = re.match(r"^##[ \t]*(.*?)[ \t]*\n", chunk)
-        ing_match = re.search(r"<ingredients>(.*?)</ingredients>", chunk, flags=re.DOTALL)
+        ing_match = re.search(
+            r"<ingredients>(.*?)</ingredients>", chunk, flags=re.DOTALL
+        )
         dir_match = re.search(r"<directions>(.*?)</directions>", chunk, flags=re.DOTALL)
 
         if not ing_match or not dir_match:
