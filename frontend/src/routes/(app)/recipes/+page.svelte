@@ -70,7 +70,7 @@
           <div class="text-sm text-muted-foreground flex gap-3 flex-wrap">
             {#if recipe.cook_time_minutes}
               <span>{recipe.cook_time_minutes} min</span>
-            {/if}            
+            {/if}
             <span>
               {getIngredientCount(recipe)} ingredients
             </span>
