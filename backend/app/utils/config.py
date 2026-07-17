@@ -1,10 +1,11 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import re
 
 TAG_PATTERN = re.compile(r"^[a-zåäö '\-]+$")
 
 
 class Settings(BaseSettings):
+
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     VALID_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png"}
 
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
 
 
 settings = Settings()
