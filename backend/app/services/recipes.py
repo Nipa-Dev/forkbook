@@ -25,10 +25,10 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
             """
             INSERT INTO recipes (
                 id, owner_id, title, description, slug,
-                tags, time_minutes, difficulty, image_url,
+                tags, cook_time_minutes, prep_time_minutes, difficulty, image_url,
                 equipment, notes, storage
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 recipe_id,
@@ -37,7 +37,8 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
                 recipe.description,
                 slug,
                 recipe.tags,
-                recipe.time_minutes,
+                recipe.cook_time_minutes,
+                recipe.prep_time_minutes,
                 recipe.difficulty,
                 recipe.image_url if recipe.image_url else None,
                 Json(recipe.equipment),

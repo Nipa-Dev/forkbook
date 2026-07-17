@@ -35,12 +35,14 @@ CREATE TABLE recipes (
     notes JSONB DEFAULT '[]',
     storage JSONB DEFAULT '[]',
 
-    time_minutes INTEGER,
+    cook_time_minutes INTEGER,
+    prep_time_minutes INTEGER,
     difficulty recipe_difficulty,
     image_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT positive_time CHECK (time_minutes IS NULL OR time_minutes > 0),
+    CONSTRAINT positive_time_cook CHECK (cook_time_minutes IS NULL OR cook_time_minutes > 0),
+    CONSTRAINT positive_time_prep CHECK (prep_time_minutes IS NULL OR prep_time_minutes > 0),
     CONSTRAINT valid_slug CHECK (slug ~ '^[a-z0-9-]+$')
 );
 

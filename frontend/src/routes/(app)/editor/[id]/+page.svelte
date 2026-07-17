@@ -13,7 +13,8 @@
     recipe = {
       title: data.recipe.title ?? '',
       description: data.recipe.description ?? '',
-      time_minutes: data.recipe.time_minutes ?? '',
+      cook_time: data.recipe.cook_time_minutes ?? '',
+      prep_time: data.recipe.prep_time_minutes ?? '',
       image_url: data.recipe.image_url ?? '',
       tags: (data.recipe.tags ?? []).join(', '),
       equipment: (data.recipe.equipment ?? []).join(', '),
@@ -69,8 +70,8 @@
   </div>
 
   <div class="space-y-2">
-    <Label for="time_minutes">Time (minutes)</Label>
-    <Input id="time_minutes" name="time_minutes" type="number" bind:value={recipe.time_minutes} />
+    <Label for="cook_time">Time (minutes)</Label>
+    <Input id="cook_time" name="cook_time" type="number" bind:value={recipe.cook_time_minutes} />
   </div>
 
   <div class="space-y-2">

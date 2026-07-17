@@ -100,7 +100,7 @@ def parse_metadata(match_obj: re.Match) -> dict:
         return parsed_data
 
     metadata_text = match_obj.group(1)
-    sections = re.split(r"\n(?=[A-Za-z]+:)", "\n" + metadata_text.strip())
+    sections = re.split(r"\n(?=[A-Za-z ]+:)", "\n" + metadata_text.strip())
 
     for section in sections:
         if not section.strip():
@@ -109,7 +109,7 @@ def parse_metadata(match_obj: re.Match) -> dict:
         key = key.strip().lower()
         value = value.strip()
 
-        if key in ["title", "description", "difficulty", "time"]:
+        if key in ["title", "description", "difficulty", "cook time", "prep time"]:
             parsed_data[key] = value
         elif key in ["tags", "equipment", "notes", "storage"]:
             parsed_data[key] = parse_list_value(key, value)
@@ -140,9 +140,10 @@ def parse_recipe(full_recipe_text: str) -> RecipeCreate:
         raise InvalidRecipeError("Recipe is missing the required <recipe> block")
 
     recipe_dict = parse_metadata(block_match)
-    if "time" in recipe_dict:
-        # Pydantic schema expects 'time_minutes'
-        recipe_dict["time_minutes"] = recipe_dict.pop("time")
+    if "cook time" in recipe_dict:
+        recipe_dict["cook_time_minutes"] = recipe_dict.pop("cook time")
+    if "prep time" in recipe_dict:
+        recipe_dict["prep_time_minutes"] = recipe_dict.pop("prep time")
 
     start, end = block_match.span()
     body_text = (full_recipe_text[:start] + full_recipe_text[end:]).strip()

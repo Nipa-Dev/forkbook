@@ -26,15 +26,15 @@
         <div class="flex items-center gap-8">
           <div class="flex flex-col">
             <span class="text-[10px] uppercase font-bold tracking-tighter text-muted-foreground"
-              >Prep Time</span
+              >Cook Time</span
             >
-            <span class="text-sm font-medium">20 min</span>
+            <span class="text-sm font-medium">{recipe.cook_time_minutes} min</span>
           </div>
           <div class="flex flex-col">
             <span class="text-[10px] uppercase font-bold tracking-tighter text-muted-foreground"
-              >Cook Time</span
+              >Prep Time</span
             >
-            <span class="text-sm font-medium">{recipe.time_minutes} min</span>
+            <span class="text-sm font-medium">{recipe.prep_time_minutes ?? 0} min</span>
           </div>
         </div>
         {#if recipe.tags?.length > 0}

@@ -39,7 +39,8 @@ class RecipeBase(BaseModel):
     components: list[RecipeComponent] = Field(default_factory=list)
 
     tags: list[str] = Field(default_factory=list)
-    time_minutes: int | None = None
+    cook_time_minutes: int | None = None
+    prep_time_minutes: int | None = None
     difficulty: str | None = None
 
     image_url: str | None = None
@@ -92,7 +93,8 @@ class RecipeRead(RecipeBase):
 class RecipeUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    time_minutes: int | None = None
+    cook_time_minutes: int | None = None
+    prep_time_minutes: int | None = None
     difficulty: str | None = None
     image_url: str | None = None
     tags: list[str] | None = None

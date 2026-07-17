@@ -8,7 +8,6 @@
 
   let userRating = $state(0);
   let hoverRating = $state(0);
-
   $effect(() => {
     userRating = Math.round(recipe.average_rating ?? 0);
   });
@@ -122,12 +121,12 @@
         <div class="pt-4 border-t space-y-6">
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col">
-              <span class="text-[10px] uppercase font-bold tracking-tighter">Prep Time</span>
-              <span class="text-sm">20 min</span>
+              <span class="text-[10px] uppercase font-bold tracking-tighter">Cook Time</span>
+              <span class="text-sm">{recipe.cook_time_minutes} min</span>
             </div>
             <div class="flex flex-col">
-              <span class="text-[10px] uppercase font-bold tracking-tighter">Cook Time</span>
-              <span class="text-sm">{recipe.time_minutes} min</span>
+              <span class="text-[10px] uppercase font-bold tracking-tighter">Prep Time</span>
+              <span class="text-sm">{recipe.prep_time_minutes ?? 0} min</span>
             </div>
           </div>
 
