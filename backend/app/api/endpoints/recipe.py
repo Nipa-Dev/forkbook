@@ -1,15 +1,23 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
+from pathlib import Path
 
 from app.utils.dependencies import GetConnection
 from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes, RecipeUpdate
 from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.parser import parse_recipe
+from app.utils.config import settings
+from app.utils.images import save_thumbnail
+
 
 router = APIRouter()
+
+CURRENT_FILE = Path(__file__).resolve()
+PROJECT_ROOT = CURRENT_FILE.parents[4]
+FRONTEND_IMAGES_DIR = PROJECT_ROOT / "frontend" / "static" / "images"
 
 
 @router.get("/", response_model=PaginatedRecipes)
@@ -127,9 +135,37 @@ async def get_recipes(
 
 
 @router.post("/import", response_model=RecipeRead)
-async def import_recipe(conn: GetConnection, file: UploadFile = File(...)):
-    md = (await file.read()).decode("utf-8")
+async def import_recipe(
+    conn: GetConnection,
+    recipe_file: UploadFile,
+    image_file: UploadFile | None = None,
+):
+    md = (await recipe_file.read()).decode("utf-8")
     recipe = parse_recipe(md)
+
+    image_url = None
+    if image_file and image_file.filename:
+        ext = Path(image_file.filename).suffix.lower()
+        if ext not in settings.VALID_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file extension.",
+            )
+        try:
+            FRONTEND_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+            filename = f"{uuid4()}.webp"
+            full_save_path = FRONTEND_IMAGES_DIR / filename
+
+            save_thumbnail(image_file.file, full_save_path)
+
+            image_url = f"/images/{filename}"
+            recipe.image_url = image_url
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to process image: {str(e)}",
+            )
     created_recipe = await create_recipe(conn, recipe)
     return RecipeRead(
         **created_recipe.model_dump(),
