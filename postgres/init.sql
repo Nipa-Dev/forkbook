@@ -4,6 +4,11 @@ CREATE TYPE recipe_difficulty AS ENUM (
     'hard'
 );
 
+CREATE TYPE recipe_flag_type AS ENUM (
+    'bookmark',
+    'made'
+);
+
 CREATE TABLE users (
     user_id UUID PRIMARY KEY,
 
@@ -109,6 +114,19 @@ CREATE TABLE refresh_token_sessions (
     
     user_agent TEXT,
     ip_address TEXT
+);
+
+CREATE TABLE recipe_flags (
+    id UUID PRIMARY KEY,
+
+    user_id UUID NOT NULL REFERENCES users(user_id),
+    recipe_id UUID NOT NULL REFERENCES recipes(id),
+
+    flag_type recipe_flag_type NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE (user_id, recipe_id, flag_type)
 );
 
 CREATE VIEW recipe_rating_stats AS
