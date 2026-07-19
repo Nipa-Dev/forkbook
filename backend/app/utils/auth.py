@@ -55,7 +55,7 @@ def decrypt_email(email_enc: bytes | str, key_version: int) -> str:
     if isinstance(email_enc, bytes):
         email_str = email_enc.decode("utf-8")
     else:
-        email_str = email_enc
+        email_str = str(email_enc)
 
     original_email = email_str.removeprefix("ENC_")
 
