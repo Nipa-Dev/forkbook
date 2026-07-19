@@ -28,11 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(recipe_flags.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(recipe.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(security.router, prefix="/auth", tags=["Authentication"])
 app.include_router(rating.router, prefix="/rate", tags=["Ratings"])
-app.include_router(recipe_flags.router, prefix="/recipes", tags=["Recipes"])
-
 
 @app.get("/", response_model=StatusResponse)
 async def root():

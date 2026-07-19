@@ -26,11 +26,30 @@ class ToggleFlagRequest(BaseModel):
 async def get_user_saved_recipes(
     conn: GetConnection,
     current_user: CurrentUser,
-    flag_type: RecipeFlagType = Query(RecipeFlagType.BOOKMARK),
+    flag_type: RecipeFlagType | None = Query(None),
 ):
     async with conn.transaction():
         async with conn.cursor(row_factory=dict_row) as cur:
-            ...
+            if flag_type:
+                # If a specific flag_type is requested, filter by it
+                await cur.execute(
+                    """
+                    SELECT * FROM recipe_flags
+                    WHERE user_id = %s AND flag_type = %s
+                    """,
+                    (current_user.user_id, flag_type.value)
+                )
+            else:
+                # If no flag_type is provided, fetch all flags for the user
+                await cur.execute(
+                    """
+                    SELECT * FROM recipe_flags
+                    WHERE user_id = %s
+                    """,
+                    (current_user.user_id,)
+                )
+            data = await cur.fetchall()
+        return data
 
 
 @router.post("/{recipe_id}/toggle-saved", response_model=StatusResponse)
