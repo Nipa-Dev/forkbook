@@ -22,3 +22,8 @@ dev = [
     "niquests>=3.18.2",
     "pillow>=12.2.0",
 ]
+
+[tool.ruff.lint]
+select = [
+    "I",
+]
