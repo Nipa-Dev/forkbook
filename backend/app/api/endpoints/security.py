@@ -1,4 +1,3 @@
-import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
@@ -7,8 +6,6 @@ from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.utils.config import settings
-from app.utils.dependencies import GetConnection
 from app.schemas.auth import Token
 from app.schemas.user import UserInDB, UserRegister
 from app.utils import auth
@@ -18,6 +15,8 @@ from app.utils.auth import (
     get_current_active_user,
     get_password_hash,
 )
+from app.utils.config import settings
+from app.utils.db import GetConnection
 
 router = APIRouter()
 

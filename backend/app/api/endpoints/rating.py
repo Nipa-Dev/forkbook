@@ -1,14 +1,14 @@
-from psycopg.rows import dict_row
-from uuid import uuid4
-from uuid import UUID
 from typing import Annotated
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
+from psycopg.rows import dict_row
+
 from app.schemas.rating import RecipeRatingCreate
 from app.schemas.user import UserInDB
-from app.utils.dependencies import GetConnection
 from app.utils.auth import get_current_active_user
+from app.utils.db import GetConnection
 
 router = APIRouter()
 
@@ -39,7 +39,7 @@ async def add_or_update_rating(
                 query,
                 (str(uuid4()), recipe_id, current_user.user_id, rating_data.rating),
             )
-        except Exception as e:
+        except Exception:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
 

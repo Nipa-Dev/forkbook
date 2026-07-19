@@ -1,9 +1,10 @@
-import uuid
-import unicodedata
 import re
+import unicodedata
+import uuid
 
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
+
 from app.schemas.recipe import RecipeCreate, RecipeRead
 
 

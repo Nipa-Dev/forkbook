@@ -1,5 +1,6 @@
-from PIL import Image
 from pathlib import Path
+
+from PIL import Image
 
 THUMBNAIL_SIZE = (400, 300)
 WEBP_QUALITY = 80

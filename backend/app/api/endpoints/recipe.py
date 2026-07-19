@@ -1,17 +1,16 @@
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
-from pathlib import Path
 
-from app.utils.dependencies import GetConnection
-from app.schemas.recipe import RecipeCreate, RecipeRead, PaginatedRecipes, RecipeUpdate
+from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate
 from app.services.recipes import create_recipe, get_recipe_ids
-from app.utils.parser import parse_recipe
 from app.utils.config import settings
+from app.utils.db import GetConnection
 from app.utils.images import save_thumbnail
-
+from app.utils.parser import parse_recipe
 
 router = APIRouter()
 
