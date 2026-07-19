@@ -12,15 +12,15 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from psycopg.rows import dict_row
 from pwdlib import PasswordHash
 
-from app.utils.config import settings
-from app.utils.dependencies import GetConnection
 from app.schemas.user import UserInDB, UserRead
+from app.utils.config import settings
+from app.utils.db import GetConnection
 
 password_hash = PasswordHash.recommended()
 
 DUMMY_HASH = password_hash.hash("veryfancyindeed")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 def verify_password(plain_password, hashed_password) -> bool:

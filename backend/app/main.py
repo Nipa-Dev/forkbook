@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 import psycopg_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import recipe, security, rating
+from app.api.endpoints import rating, recipe, recipe_flags, security
+from app.schemas.responses import StatusResponse
 from app.utils.config import get_database_url
-from app.utils.dependencies import State
+from app.utils.db import State
 
 
 @asynccontextmanager
@@ -31,8 +31,9 @@ app.add_middleware(
 app.include_router(recipe.router, prefix="/recipes", tags=["recipes"])
 app.include_router(security.router, prefix="/auth")
 app.include_router(rating.router, prefix="/rate")
+app.include_router(recipe_flags.router, prefix="/recipes")
 
 
-@app.get("/")
+@app.get("/", response_model=StatusResponse)
 async def root():
     return {"message": "hello world!"}

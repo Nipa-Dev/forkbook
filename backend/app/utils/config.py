@@ -1,11 +1,11 @@
-from pydantic_settings import BaseSettings
 import re
+
+from pydantic_settings import BaseSettings
 
 TAG_PATTERN = re.compile(r"^[a-zåäö '\-]+$")
 
 
 class Settings(BaseSettings):
-
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
