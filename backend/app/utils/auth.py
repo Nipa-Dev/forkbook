@@ -23,8 +23,8 @@ DUMMY_HASH = password_hash.hash("veryfancyindeed")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
-def verify_password(plain_password, hashed_password) -> bool:
-    return password_hash.verify(plain_password, hashed_password)
+def verify_password(plain_password, hashed_password) -> tuple[bool, str | None]:
+    return password_hash.verify_and_update(plain_password, hashed_password)
 
 
 def get_password_hash(password):
@@ -96,7 +96,7 @@ async def authenticate_user(
     conn: GetConnection,
     identifier: str,
     password: str,
-):  # -> UserInDB | None:
+) -> UserInDB | None:
     identifier = identifier.strip().casefold()
 
     user = None
@@ -115,11 +115,8 @@ async def authenticate_user(
     if not user:
         verify_password(password, DUMMY_HASH)
         return None
-
-    if not verify_password(
-        password,
-        user.hashed_password,
-    ):
+    is_valid, _new_hash = verify_password(password, user.hashed_password)
+    if not is_valid:
         return None
 
     return user
@@ -146,8 +143,9 @@ def create_access_token(
 
     encoded_jwt = jwt.encode(
         payload,
-        settings.SECRET_KEY,
+        settings.PRIVATE_KEY,
         algorithm=settings.ALGORITHM,
+        headers={"kid": settings.JWT_KID}
     )
 
     return encoded_jwt
@@ -166,7 +164,7 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
+            settings.PUBLIC_KEY,
             algorithms=[settings.ALGORITHM],
         )
         if payload.get("type") != "access":
@@ -192,38 +190,14 @@ async def get_current_user(
 
     return user
 
-
-@lru_cache(maxsize=1024)
-def _cache_profile(
-    user_id: UUID,
-    username: str,
-    email_enc: bytes,
-    key_version: int,
-    created_at: datetime,
-    updated_at: datetime,
-) -> UserRead:
-    decrypted_email = decrypt_email(email_enc, key_version)
-
-    return UserRead(
-        user_id=user_id,
-        username=username,
-        email=decrypted_email,
-        created_at=created_at,
-        updated_at=updated_at,
-    )
-
-
 async def get_current_active_user(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
 ) -> UserRead:
-    return _cache_profile(
-        current_user.user_id,
-        current_user.username,
-        current_user.email_enc,
-        current_user.key_version,
-        current_user.created_at,
-        current_user.updated_at,
+
+    return UserRead(
+        user_id=current_user.user_id,
+        username=current_user.username,
+        email=decrypt_email(current_user.email_enc, current_user.key_version),
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at,
     )
-    # user_dict = current_user.model_dump()
-    # user_dict["email"] = decrypt_email(user_dict["email_enc"], 1)
-    # return UserRead(**user_dict)

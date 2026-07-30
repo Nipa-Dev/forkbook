@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
+from psycopg.errors import UniqueViolation
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
@@ -66,29 +67,34 @@ async def create_user(conn: GetConnection, user_in: UserRegister):
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING user_id, username;
     """
+    try:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                query,
+                (
+                    user_id,
+                    user_in.username,
+                    username_normalized,
+                    email_blind_index,
+                    mock_encrypted_bytes,
+                    hashed_password,
+                    1,  # key_version
+                    now,
+                    now,
+                ),
+            )
+            new_user = await cur.fetchone()
 
-    async with conn.cursor() as cur:
-        await cur.execute(
-            query,
-            (
-                user_id,
-                user_in.username,
-                username_normalized,
-                email_blind_index,
-                mock_encrypted_bytes,
-                hashed_password,
-                1,  # key_version
-                now,
-                now,
-            ),
+            return {
+                "status": "success",
+                "user_id": str(new_user[0]),
+                "username": new_user[1],
+            }
+    except UniqueViolation:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username or email is already taken."
         )
-        new_user = await cur.fetchone()
-
-        return {
-            "status": "success",
-            "user_id": str(new_user[0]),
-            "username": new_user[1],
-        }
 
 
 @router.get("/users/me")

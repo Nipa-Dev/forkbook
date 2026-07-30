@@ -1,5 +1,5 @@
 import re
-
+from pathlib import Path
 from pydantic_settings import BaseSettings
 
 TAG_PATTERN = re.compile(r"^[a-zåäö '\-]+$")
@@ -11,11 +11,16 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    SECRET_KEY: str
-    REFRESH_SECRET_KEY: str
-    ALGORITHM: str
+
+    JWT_KID: str = "dev-key-1"
+    PRIVATE_KEY: str
+    PUBLIC_KEY: str
+    ALGORITHM: str = "RS256"
+
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
+    SECRET_KEY: str
+    REFRESH_SECRET_KEY: str
     EMAIL_BIDX_SECRET: str
 
     TAG_MAX_COUNT: int = 5

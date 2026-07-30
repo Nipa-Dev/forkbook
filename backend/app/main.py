@@ -1,12 +1,15 @@
 from contextlib import asynccontextmanager
+import json
 
 import psycopg_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from jwt.algorithms import RSAAlgorithm
 from app.api.endpoints import rating, recipe, recipe_flags, security
 from app.schemas.responses import StatusResponse
-from app.utils.config import get_database_url
+from app.utils.config import get_database_url, settings
 from app.utils.db import State
 
 
@@ -36,3 +39,16 @@ app.include_router(rating.router, prefix="/rate", tags=["Ratings"])
 @app.get("/", response_model=StatusResponse)
 async def root():
     return {"message": "hello world!"}
+
+@app.get("/.well-known/jwks.json", tags=["auth"])
+async def get_jwks():
+    """Exposes the public key in JWKS format"""
+    public_key_obj = serialization.load_pem_public_key(
+        settings.PUBLIC_KEY.encode("utf-8"), backend=default_backend()
+    )
+    jwk_str = RSAAlgorithm.to_jwk(public_key_obj)
+    jwk_dict = json.loads(jwk_str)
+
+    jwk_dict.update({"kid": settings.JWT_KID, "use": "sig", "alg": "RS256"})
+
+    return {"keys": [jwk_dict]}
