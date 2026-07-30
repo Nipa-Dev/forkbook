@@ -30,7 +30,7 @@ export const actions = {
         password: password.toString()
       };
 
-      const registerResponse = await api('/auth/add-user', {
+      await api('/auth/add-user', {
         method: 'POST',
         headers: {
           'content-type': 'application/json'

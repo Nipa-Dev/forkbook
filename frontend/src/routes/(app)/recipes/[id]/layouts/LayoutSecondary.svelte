@@ -1,6 +1,5 @@
 <script>
   import { enhance } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
   import { Badge } from '$lib/components/ui/badge';
   import { Star, Bookmark, CheckCircle } from 'lucide-svelte';
   let { recipe } = $props();
@@ -44,7 +43,7 @@
         </div>
         {#if recipe.tags?.length > 0}
           <div class="flex flex-wrap gap-2 pt-1">
-            {#each recipe.tags as tag}
+            {#each recipe.tags as tag, i (i)}
               <Badge variant="secondary" class="text-xs font-normal px-2.5 py-0.5 rounded-md">
                 {tag}
               </Badge>
@@ -60,7 +59,7 @@
             role="group"
             aria-label="Rate this recipe"
           >
-            {#each Array(5) as _, i}
+            {#each Array(5) as i (i)}
               {@const starValue = i + 1}
               <button
                 type="submit"
@@ -119,7 +118,7 @@
       <section class="space-y-4">
         <h2 class="text-xl font-semibold border-b pb-1">Ingredients</h2>
         <div class="space-y-6">
-          {#each recipe.components ?? [] as component}
+          {#each recipe.components ?? [] as component, i (i)}
             <div class="space-y-2">
               {#if !isMain(component.name)}
                 <h3 class="text-xs font-bold uppercase tracking-wider text-primary">
@@ -127,7 +126,7 @@
                 </h3>
               {/if}
               <ul class="list-disc pl-5 space-y-1 text-sm leading-relaxed">
-                {#each component.ingredients ?? [] as ing}
+                {#each component.ingredients ?? [] as ing, i (i)}
                   <li>
                     {#if ing.amount}
                       <span class="font-medium">{ing.amount}</span>
@@ -150,7 +149,7 @@
               >Notes</span
             >
             <div class="text-sm leading-relaxed space-y-2">
-              {#each recipe.notes as note}
+              {#each recipe.notes as note, i (i)}
                 <p>{note}</p>
               {/each}
             </div>
@@ -164,7 +163,7 @@
               >Storage</span
             >
             <div class="text-sm leading-relaxed space-y-2">
-              {#each recipe.storage as item}
+              {#each recipe.storage as item, i (i)}
                 <p>{item}</p>
               {/each}
             </div>
@@ -188,7 +187,7 @@
       <section class="space-y-6">
         <h2 class="text-xl font-semibold border-b pb-1">Instructions</h2>
         <div class="space-y-8">
-          {#each recipe.components ?? [] as component}
+          {#each recipe.components ?? [] as component, i (i)}
             <div class="space-y-3">
               {#if !isMain(component.name)}
                 <h3 class="text-xs font-bold uppercase tracking-wider text-primary">
@@ -196,7 +195,7 @@
                 </h3>
               {/if}
               <ol class="list-decimal pl-5 space-y-4 text-sm leading-relaxed">
-                {#each component.steps ?? [] as step}
+                {#each component.steps ?? [] as step, i (i)}
                   <li class="pl-1">
                     {step.description}
                   </li>

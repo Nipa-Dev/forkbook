@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import RecipeSearch from '$lib/components/RecipeSearch.svelte';
   import * as Pagination from '$lib/components/ui/pagination';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
   let { data } = $props();
 
   const getIngredientCount = (recipe) => {
@@ -13,7 +14,7 @@
   const totalPages = $derived(Math.ceil(data.recipes.total / data.recipes.page_size));
 
   const buildPageUrl = (newPage) => {
-    const params = new URLSearchParams(page.url.searchParams);
+    const params = new SvelteURLSearchParams(page.url.searchParams);
     params.set('page', newPage);
     return `?${params.toString()}`;
   };
@@ -58,7 +59,7 @@
 
         <Card.Content class="space-y-1">
           <div class="flex flex-wrap gap-2 items-center">
-            {#each recipe.tags ?? [] as tag}
+            {#each recipe.tags ?? [] as tag (tag)}
               <Badge variant="secondary">{tag}</Badge>
             {/each}
 
@@ -94,7 +95,7 @@
         </Pagination.Item>
       {/if}
 
-      {#each pages as pageNumber}
+      {#each pages as pageNumber (pageNumber)}
         <Pagination.Item>
           <a
             href={buildPageUrl(pageNumber)}

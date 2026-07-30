@@ -1,12 +1,7 @@
 <script>
-  import CalendarIcon from '@lucide/svelte/icons/calendar';
   import HouseIcon from '@lucide/svelte/icons/house';
-  import InboxIcon from '@lucide/svelte/icons/inbox';
-  import SearchIcon from '@lucide/svelte/icons/search';
   import UtensilsCrossedIcon from '@lucide/svelte/icons/utensils-crossed';
   import BookOpen from 'lucide-svelte/icons/book-open';
-  import Boomark from 'lucide-svelte/icons/bookmark'
-  import SettingsIcon from '@lucide/svelte/icons/settings';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import Bookmark from 'lucide-svelte/icons/bookmark';
 

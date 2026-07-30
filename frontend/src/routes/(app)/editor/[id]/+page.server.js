@@ -39,7 +39,7 @@ export const actions = {
       });
 
       return { success: true };
-    } catch (err) {
+    } catch {
       return fail(500, {
         error: 'Failed to save recipe'
       });

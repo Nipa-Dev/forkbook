@@ -33,7 +33,7 @@
       <section class="space-y-6">
         <h2 class="text-xl font-semibold border-b pb-1">Ingredients</h2>
         <div class="grid sm:grid-cols-2 gap-8">
-          {#each recipe.components ?? [] as component}
+          {#each recipe.components ?? [] as component, i (i)}
             <div class="space-y-2">
               {#if !isMain(component.name)}
                 <h3 class="text-xs font-bold uppercase tracking-wider text-primary">
@@ -41,7 +41,7 @@
                 </h3>
               {/if}
               <ul class="list-disc list-outside pl-5 space-y-1 text-sm leading-relaxed">
-                {#each component.ingredients ?? [] as ing}
+                {#each component.ingredients ?? [] as ing, i (i)}
                   <li>
                     {#if ing.amount}
                       <span class="font-medium">{ing.amount}</span>
@@ -59,7 +59,7 @@
       <section class="space-y-6">
         <h2 class="text-xl font-semibold border-b pb-1">Instructions</h2>
         <div class="grid sm:grid-cols-2 gap-8 items-start">
-          {#each recipe.components ?? [] as component}
+          {#each recipe.components ?? [] as component, i (i)}
             <div class="space-y-3">
               {#if !isMain(component.name)}
                 <h3 class="text-xs font-bold uppercase tracking-wider text-primary">
@@ -67,7 +67,7 @@
                 </h3>
               {/if}
               <ol class="list-decimal list-outside pl-5 space-y-3 text-sm leading-relaxed">
-                {#each component.steps ?? [] as step}
+                {#each component.steps ?? [] as step, i (i)}
                   <li class="pl-1">
                     {step.description}
                   </li>
@@ -96,7 +96,7 @@
             role="group"
             aria-label="Rate this recipe"
           >
-            {#each Array(5) as _, i}
+            {#each Array(5) as i (i)}
               {@const starValue = i + 1}
               <button
                 type="submit"
@@ -169,7 +169,7 @@
             <div class="space-y-1">
               <span class="text-[10px] uppercase font-bold tracking-tighter block">Notes</span>
               <div class="text-sm leading-relaxed space-y-2">
-                {#each recipe.notes as note}
+                {#each recipe.notes as note, i (i)}
                   <p>{note}</p>
                 {/each}
               </div>
@@ -180,7 +180,7 @@
             <div class="space-y-1 pt-2">
               <span class="text-[10px] uppercase font-bold tracking-tighter block">Storage</span>
               <div class="text-sm leading-relaxed space-y-2">
-                {#each recipe.storage as item}
+                {#each recipe.storage as item, i (i)}
                   <p>{item}</p>
                 {/each}
               </div>

@@ -5,23 +5,19 @@
   import { Textarea } from '$lib/components/ui/textarea';
   import * as Select from '$lib/components/ui/select';
 
-  let { data, form } = $props();
+  let { data } = $props();
 
-  let recipe = $state({});
-
-  $effect(() => {
-    recipe = {
-      title: data.recipe.title ?? '',
-      description: data.recipe.description ?? '',
-      cook_time: data.recipe.cook_time_minutes ?? '',
-      prep_time: data.recipe.prep_time_minutes ?? '',
-      image_url: data.recipe.image_url ?? '',
-      tags: (data.recipe.tags ?? []).join(', '),
-      equipment: (data.recipe.equipment ?? []).join(', '),
-      notes: data.recipe.notes ?? '',
-      storage: data.recipe.storage ?? ''
-    };
-  });
+  let recipe = $derived.by(() => ({
+    title: data.recipe?.title ?? '',
+    description: data.recipe?.description ?? '',
+    cook_time: data.recipe?.cook_time_minutes ?? '',
+    prep_time: data.recipe?.prep_time_minutes ?? '',
+    image_url: data.recipe?.image_url ?? '',
+    tags: (data.recipe?.tags ?? []).join(', '),
+    equipment: (data.recipe?.equipment ?? []).join(', '),
+    notes: data.recipe?.notes ?? '',
+    storage: data.recipe?.storage ?? ''
+  }));
 
   const options = [
     { value: 'easy', label: 'Easy' },
@@ -29,7 +25,7 @@
     { value: 'hard', label: 'Hard' }
   ];
 
-  let difficulty = $state(data.recipe.difficulty ?? 'easy');
+  let difficulty = $derived(data.recipe?.difficulty ?? 'easy');
 
   const triggerContent = $derived(
     options.find((o) => o.value === difficulty)?.label ?? 'Select difficulty'

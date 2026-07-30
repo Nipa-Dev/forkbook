@@ -18,7 +18,7 @@ export async function handle({ event, resolve }) {
       // Verify the signature and expiration
       await jwtVerify(token, JWKS);
       isAuthenticated = true;
-    } catch (err) {
+    } catch {
       // Remove invalid token
       event.cookies.delete('session_token', { path: '/' });
     }

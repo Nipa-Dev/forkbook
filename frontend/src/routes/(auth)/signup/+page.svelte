@@ -3,7 +3,6 @@
   import { Input } from '$lib/components/ui/input/index.js';
   import * as Card from '$lib/components/ui/card/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import ModeToggle from '$lib/components/ModeToggle.svelte';
   import { page } from '$app/state';
 
   let { form } = $props();

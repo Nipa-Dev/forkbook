@@ -74,7 +74,7 @@ export const actions = {
       );
 
       return { success: true };
-    } catch (error) {
+    } catch {
       return fail(500, { message: 'Check server terminal logs.' });
     }
   },
@@ -104,7 +104,7 @@ export const actions = {
         fetch
       );
       return { success: true };
-    } catch (error) {
+    } catch {
       return fail(500, { message: 'Failed to update bookmark status.' });
     }
   },
@@ -132,7 +132,7 @@ export const actions = {
         fetch
       );
       return { success: true };
-    } catch (error) {
+    } catch {
       return fail(500, { message: 'Failed to update recipe progress status.' });
     }
   }
