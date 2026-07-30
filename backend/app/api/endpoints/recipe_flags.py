@@ -37,7 +37,7 @@ async def get_user_saved_recipes(
                     SELECT * FROM recipe_flags
                     WHERE user_id = %s AND flag_type = %s
                     """,
-                    (current_user.user_id, flag_type.value)
+                    (current_user.user_id, flag_type.value),
                 )
             else:
                 # If no flag_type is provided, fetch all flags for the user
@@ -46,7 +46,7 @@ async def get_user_saved_recipes(
                     SELECT * FROM recipe_flags
                     WHERE user_id = %s
                     """,
-                    (current_user.user_id,)
+                    (current_user.user_id,),
                 )
             data = await cur.fetchall()
         return data

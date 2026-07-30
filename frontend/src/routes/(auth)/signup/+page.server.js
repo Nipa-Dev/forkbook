@@ -12,7 +12,7 @@ export const actions = {
     if (!username || !email || !password || !passwordConfirm) {
       return fail(400, {
         message: 'All fields are required',
-        values: { username, email } 
+        values: { username, email }
       });
     }
 
@@ -59,10 +59,10 @@ export const actions = {
       });
     } catch (err) {
       if (err.status === 409 || err.message?.includes('409')) {
-          return fail(409, {
-            message: 'Username or email is already taken.',
-            values: { username, email }
-          });
+        return fail(409, {
+          message: 'Username or email is already taken.',
+          values: { username, email }
+        });
       }
       console.error('Signup system error:', err);
       return fail(500, { message: 'Internal server error. Try again later.' });

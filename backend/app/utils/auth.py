@@ -145,7 +145,7 @@ def create_access_token(
         payload,
         settings.PRIVATE_KEY,
         algorithm=settings.ALGORITHM,
-        headers={"kid": settings.JWT_KID}
+        headers={"kid": settings.JWT_KID},
     )
 
     return encoded_jwt
@@ -190,10 +190,10 @@ async def get_current_user(
 
     return user
 
+
 async def get_current_active_user(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
 ) -> UserRead:
-
     return UserRead(
         user_id=current_user.user_id,
         username=current_user.username,

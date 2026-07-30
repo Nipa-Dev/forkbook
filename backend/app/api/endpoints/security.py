@@ -93,7 +93,7 @@ async def create_user(conn: GetConnection, user_in: UserRegister):
     except UniqueViolation:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Username or email is already taken."
+            detail="Username or email is already taken.",
         )
 
 
