@@ -2,21 +2,26 @@
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { Badge } from '$lib/components/ui/badge';
-  import { Star } from 'lucide-svelte';
+  import { Star, Bookmark, CheckCircle } from 'lucide-svelte';
   let { recipe } = $props();
   const isMain = (name) => name === 'Main' || name === 'Component: Main';
 
   let userRating = $state(0);
   let hoverRating = $state(0);
 
+  let bookmarkedState = $state(false);
+  let madeState = $state(false);
+
   $effect(() => {
     userRating = Math.round(recipe.average_rating ?? 0);
+    bookmarkedState = !!recipe.is_bookmarked;
+    madeState = !!recipe.is_made;
   });
 </script>
 
 <article class="max-w-6xl mx-auto px-6 py-8">
   <div class="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-16 items-start">
-    <aside class="space-y-8">
+    <aside class="space-y-4">
       {#if recipe.image_url}
         <div class="rounded-xl overflow-hidden shadow-sm border">
           <img src={recipe.image_url} alt={recipe.title} class="w-full aspect-4/3 object-cover" />
@@ -76,6 +81,38 @@
             <span class="text-foreground font-bold">{recipe.average_rating}</span>
             ({recipe.total_ratings})
           </span>
+        </form>
+      </div>
+      <div class="flex gap-2">
+        <form method="POST" action="?/toggleBookmark" use:enhance>
+          <input type="hidden" name="active" value={bookmarkedState ? 'false' : 'true'} />
+          <button
+            type="submit"
+            class="flex items-center gap-2 text-xs font-medium hover:text-foreground cursor-pointer bg-transparent border-none p-0"
+            aria-label={bookmarkedState ? 'Remove bookmark' : 'Bookmark recipe'}
+          >
+            <Bookmark
+              size={16}
+              class={bookmarkedState ? 'text-primary' : ''}
+              fill={bookmarkedState ? 'currentColor' : 'none'}
+            />
+            <span>{bookmarkedState ? 'Bookmarked' : 'Add Bookmark'}</span>
+          </button>
+        </form>
+        <form method="POST" action="?/toggleMade" use:enhance>
+          <input type="hidden" name="active" value={madeState ? 'false' : 'true'} />
+          <button
+            type="submit"
+            class="flex items-center gap-2 text-xs font-medium hover:text-foreground cursor-pointer bg-transparent border-none p-0"
+            aria-label={madeState ? 'Mark as unmade' : 'Mark as made'}
+          >
+            <CheckCircle
+              size={16}
+              fill="none"
+              class={madeState ? 'text-foreground' : 'text-muted-foreground'}
+            />
+            <span>{madeState ? 'Made' : 'Mark Made'}</span>
+          </button>
         </form>
       </div>
 

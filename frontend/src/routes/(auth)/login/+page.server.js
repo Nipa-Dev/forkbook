@@ -42,6 +42,6 @@ export const actions = {
     }
 
     const redirectTo = url.searchParams.get('redirectTo') || '/';
-    throw redirect(303, redirectTo);
+    redirect(303, redirectTo);
   }
 };

@@ -11,8 +11,16 @@ export async function api(path, options = {}, svelteFetch = null) {
     }
   });
 
+  if (res.status === 401 || res.status === 403) {
+    const err = new Error('401_UNAUTHORIZED');
+    err.status = res.status;
+    throw err;
+  }
+
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    const err = new Error(`API error: ${res.status}`);
+    err.status = res.status;
+    throw err;
   }
 
   return res.json();

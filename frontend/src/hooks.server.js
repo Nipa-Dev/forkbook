@@ -1,67 +1,54 @@
 import { redirect } from '@sveltejs/kit';
-import { api } from '$lib/server/api.js';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const FASTAPI_JWKS_URL = new URL('http://localhost:8000/.well-known/jwks.json');
+const JWKS = createRemoteJWKSet(FASTAPI_JWKS_URL);
 
 export async function handle({ event, resolve }) {
-  const { fetch, cookies, url, request } = event;
   const token = event.cookies.get('session_token');
-
   const { pathname, search } = event.url;
 
   const isAuthPage = pathname === '/login' || pathname.startsWith('/signup');
   const isApiRoute = pathname.startsWith('/api') || pathname.startsWith('/auth');
 
-  let isValid = false;
+  let isAuthenticated = false;
 
   if (token) {
     try {
-      // If this succeeds, user data is returned directly
-      const userData = await api('/auth/users/me', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        fetch
-      });
-
-      event.locals.user = userData;
-      isValid = true;
+      // Verify the signature and expiration
+      await jwtVerify(token, JWKS);
+      isAuthenticated = true;
     } catch (err) {
-      const errorMessage = err.message || '';
-
-      if (errorMessage.includes('401') || errorMessage.includes('403')) {
-        // Token is invalid -> wipe it
-        event.cookies.delete('session_token', { path: '/' });
-        isValid = false;
-      } else {
-        // Catch-all for 500s or network drops: let the user keep their
-        // cookie but flag the session as degraded so components can adapt.
-        console.warn('Backend error or offline. Degrading session state:', err);
-        isValid = true;
-        event.locals.user = { isDegradedSession: true };
-      }
+      // Remove invalid token
+      event.cookies.delete('session_token', { path: '/' });
     }
   }
+  event.locals.isAuthenticated = isAuthenticated;
 
-  if (isApiRoute) {
-    if (!isValid && !pathname.startsWith('/auth')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    return resolve(event);
+  if (isAuthenticated && isAuthPage) {
+    redirect(303, '/recipes');
   }
 
-  if (!isValid && !isAuthPage) {
+  if (!isAuthenticated && !isAuthPage && !isApiRoute) {
     const fromUrl = pathname + search;
-    throw redirect(303, `/login?redirectTo=${encodeURIComponent(fromUrl)}`);
-  }
-
-  if (isValid && isAuthPage) {
-    // If they just submitted a form, let it process, otherwise redirect
-    if (event.request.method !== 'POST') {
-      throw redirect(303, '/');
-    }
+    redirect(303, `/login?redirectTo=${encodeURIComponent(fromUrl)}`);
   }
 
   return resolve(event);
+}
+
+export async function handleError({ error, event }) {
+  const status = error.status || error.response?.status;
+  const msg = error.message || '';
+
+  // Catch 401/403 errors
+  if (msg.includes('401_UNAUTHORIZED') || status === 401 || status === 403) {
+    event.cookies.delete('session_token', { path: '/' });
+  }
+
+  // Fallback for other errors
+  return {
+    message: 'An unexpected error occurred.',
+    code: 'SERVER_ERROR'
+  };
 }

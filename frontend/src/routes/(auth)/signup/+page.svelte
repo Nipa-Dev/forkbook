@@ -29,7 +29,15 @@
           {/if}
           <div class="grid gap-2">
             <Label for="username">Username</Label>
-            <Input id="username" name="username" type="username" placeholder="username" required />
+            <Input
+              id="username"
+              name="username"
+              type="text"
+              autocomplete="username"
+              placeholder="username"
+              value={form?.values?.username ?? ''}
+              required
+            />
           </div>
           <div class="grid gap-2">
             <Label for="email">Email</Label>
@@ -37,7 +45,9 @@
               id="email"
               name="email"
               type="email"
+              autocomplete="email"
               placeholder="example@example.com"
+              value={form?.values?.email ?? ''}
               required
             />
           </div>

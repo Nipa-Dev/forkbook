@@ -9,12 +9,18 @@ export const actions = {
     const passwordConfirm = data.get('password-confirm');
     const email = data.get('email');
 
-    if (password !== passwordConfirm) {
-      return fail(400, { message: 'Passwords do not match' });
+    if (!username || !email || !password || !passwordConfirm) {
+      return fail(400, {
+        message: 'All fields are required',
+        values: { username, email } 
+      });
     }
 
-    if (!username || !password || !email) {
-      return fail(400, { message: 'Email and password are required' });
+    if (password !== passwordConfirm) {
+      return fail(400, {
+        message: 'Passwords do not match',
+        values: { username, email }
+      });
     }
 
     try {
@@ -52,15 +58,17 @@ export const actions = {
         maxAge: 60 * 60 * 24
       });
     } catch (err) {
-      if (err.message?.includes('401')) {
-        return fail(401, { message: 'Invalid email or password.' });
+      if (err.status === 409 || err.message?.includes('409')) {
+          return fail(409, {
+            message: 'Username or email is already taken.',
+            values: { username, email }
+          });
       }
-
-      console.error('Login system error:', err);
+      console.error('Signup system error:', err);
       return fail(500, { message: 'Internal server error. Try again later.' });
     }
 
     const redirectTo = url.searchParams.get('redirectTo') || '/';
-    throw redirect(303, redirectTo);
+    redirect(303, redirectTo);
   }
 };
