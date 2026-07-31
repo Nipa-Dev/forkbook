@@ -19,8 +19,6 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    SECRET_KEY: str
-    REFRESH_SECRET_KEY: str
     EMAIL_BIDX_SECRET: str
 
     TAG_MAX_COUNT: int = 5
