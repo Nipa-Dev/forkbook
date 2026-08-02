@@ -59,7 +59,7 @@
             role="group"
             aria-label="Rate this recipe"
           >
-            {#each Array(5) as i (i)}
+            {#each Array(5).fill(0) as _, i (i)}
               {@const starValue = i + 1}
               <button
                 type="submit"
