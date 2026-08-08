@@ -163,6 +163,10 @@
               <span class="text-[10px] uppercase font-bold tracking-tighter">Prep Time</span>
               <span class="text-sm">{recipe.prep_time_minutes ?? 0} min</span>
             </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] uppercase font-bold tracking-tighter">Servings</span>
+              <span class="text-sm">{recipe.servings ?? '--'}</span>
+            </div>
           </div>
 
           {#if recipe.notes?.length > 0}
