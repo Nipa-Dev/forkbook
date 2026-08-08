@@ -109,7 +109,14 @@ def parse_metadata(match_obj: re.Match) -> dict:
         key = key.strip().lower()
         value = value.strip()
 
-        if key in ["title", "description", "difficulty", "cook time", "prep time"]:
+        if key in [
+            "title",
+            "description",
+            "difficulty",
+            "cook time",
+            "prep time",
+            "servings",
+        ]:
             parsed_data[key] = value
         elif key in ["tags", "equipment", "notes", "storage"]:
             parsed_data[key] = parse_list_value(key, value)
