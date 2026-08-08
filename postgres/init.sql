@@ -42,7 +42,7 @@ CREATE TABLE recipes (
 
     cook_time_minutes INTEGER,
     prep_time_minutes INTEGER,
-    servings INTEGER
+    servings INTEGER,
     difficulty recipe_difficulty,
     image_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
