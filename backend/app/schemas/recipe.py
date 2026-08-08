@@ -96,6 +96,7 @@ class RecipeUpdate(BaseModel):
     description: str | None = None
     cook_time_minutes: int | None = None
     prep_time_minutes: int | None = None
+    servings: int | None = Field(default=None, gt=0)
     difficulty: str | None = None
     image_url: str | None = None
     tags: list[str] | None = None
