@@ -18,6 +18,11 @@ export const actions = {
       description: form.get('description'),
       difficulty: form.get('difficulty'),
       image_url: form.get('image_url'),
+
+      cook_time_minutes: form.get('cook_time_minutes'),
+      prep_time_minutes: form.get('prep_time_minutes'),
+      servings: form.get('servings'),
+
       notes: form.get('notes'),
       storage: form.get('storage'),
       tags: form
@@ -39,7 +44,8 @@ export const actions = {
       });
 
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error('API Save Error:', err);
       return fail(500, {
         error: 'Failed to save recipe'
       });

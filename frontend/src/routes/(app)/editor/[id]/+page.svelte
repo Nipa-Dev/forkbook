@@ -12,6 +12,7 @@
     description: data.recipe?.description ?? '',
     cook_time: data.recipe?.cook_time_minutes ?? '',
     prep_time: data.recipe?.prep_time_minutes ?? '',
+    servings: data.recipe?.servings ?? '',
     image_url: data.recipe?.image_url ?? '',
     tags: (data.recipe?.tags ?? []).join(', '),
     equipment: (data.recipe?.equipment ?? []).join(', '),
@@ -61,13 +62,39 @@
         </Select.Group>
       </Select.Content>
     </Select.Root>
-
-    <input type="hidden" name="difficulty" value={difficulty} />
+  </div>
+  <div class="space-y-2">
+    <Label for="prep_time">Prep Time (mins)</Label>
+    <Input
+      id="prep_time"
+      name="prep_time_minutes"
+      type="number"
+      min="1"
+      bind:value={recipe.prep_time}
+    />
   </div>
 
   <div class="space-y-2">
-    <Label for="cook_time">Time (minutes)</Label>
-    <Input id="cook_time" name="cook_time" type="number" bind:value={recipe.cook_time_minutes} />
+    <Label for="cook_time">Cook Time (mins)</Label>
+    <Input
+      id="cook_time"
+      name="cook_time_minutes"
+      type="number"
+      min="1"
+      bind:value={recipe.cook_time}
+    />
+  </div>
+
+  <div class="space-y-2">
+    <Label for="servings">Servings</Label>
+    <Input
+      id="servings"
+      name="servings"
+      type="number"
+      min="1"
+      placeholder="e.g. 4"
+      bind:value={recipe.servings}
+    />
   </div>
 
   <div class="space-y-2">
