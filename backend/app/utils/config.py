@@ -1,5 +1,5 @@
 import re
-from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 TAG_PATTERN = re.compile(r"^[a-zåäö '\-]+$")

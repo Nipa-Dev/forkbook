@@ -1,12 +1,13 @@
-from contextlib import asynccontextmanager
 import json
+from contextlib import asynccontextmanager
 
 import psycopg_pool
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from jwt.algorithms import RSAAlgorithm
+
 from app.api.endpoints import rating, recipe, recipe_flags, security
 from app.schemas.responses import StatusResponse
 from app.utils.config import get_database_url, settings

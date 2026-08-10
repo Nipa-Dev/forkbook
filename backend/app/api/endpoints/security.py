@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from psycopg.errors import UniqueViolation
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from psycopg.errors import UniqueViolation
 
 from app.schemas.auth import Token
 from app.schemas.user import UserInDB, UserRegister
