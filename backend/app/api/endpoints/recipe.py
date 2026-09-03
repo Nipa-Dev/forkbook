@@ -1,15 +1,15 @@
+import json
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from psycopg.rows import dict_row
-from psycopg.types.json import Json
 
 from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate
 from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.config import settings
 from app.utils.db import GetConnection
-from app.utils.images import save_thumbnail
+from app.utils.images import save_recipe_images
 from app.utils.parser import parse_recipe
 
 router = APIRouter()
@@ -142,30 +142,45 @@ async def import_recipe(
     md = (await recipe_file.read()).decode("utf-8")
     recipe = parse_recipe(md)
 
-    image_url = None
     if image_file and image_file.filename:
         ext = Path(image_file.filename).suffix.lower()
+
         if ext not in settings.VALID_EXTENSIONS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Unsupported file extension.",
             )
+
         try:
             FRONTEND_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-            filename = f"{uuid4()}.webp"
-            full_save_path = FRONTEND_IMAGES_DIR / filename
+            image_id = uuid4()
+            hero_filename = f"{image_id}.webp"
+            thumb_filename = f"{image_id}_thumb.webp"
 
-            save_thumbnail(image_file.file, full_save_path)
+            hero_path = FRONTEND_IMAGES_DIR / hero_filename
+            thumb_path = FRONTEND_IMAGES_DIR / thumb_filename
 
-            image_url = f"/images/{filename}"
-            recipe.image_url = image_url
+            save_recipe_images(
+                image_file.file,
+                hero_path,
+                thumb_path,
+            )
+
+            recipe.image_hero_filename = hero_filename
+            recipe.image_thumb_filename = thumb_filename
+
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to process image: {str(e)}",
+                detail=f"Failed to process image: {e}",
             )
-    created_recipe = await create_recipe(conn, recipe)
+
+    created_recipe = await create_recipe(
+        conn,
+        recipe,
+    )
+
     return RecipeRead(
         **created_recipe.model_dump(),
     )
@@ -261,61 +276,180 @@ async def delete_recipe(conn: GetConnection, recipe_id: str):
     return {"deleted_id": recipe_id}
 
 
-def csv_to_list(value):
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        return [v.strip() for v in value.split(",") if v.strip()]
-    return []
-
-
-@router.patch("/{recipe_id}")
+@router.patch("/{recipe_id}", response_model=RecipeRead)
 async def update_recipe(
     conn: GetConnection,
     recipe_id: UUID,
     recipe: RecipeUpdate,
 ):
-    JSON_FIELDS = {"equipment", "notes", "storage"}
-    ARRAY_FIELDS = {"tags"}
-
-    updates = recipe.model_dump(exclude_unset=True, exclude_none=True)
+    updates = recipe.model_dump(exclude_unset=True)
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields provided")
 
+    components_data = updates.pop("components", None)
+
+    JSON_FIELDS = {"equipment", "notes", "storage"}
     fields = []
     values = []
 
     for key, value in updates.items():
-        if key in ARRAY_FIELDS:
-            value = csv_to_list(value)
+        if value is None:
+            continue
 
-        elif key in JSON_FIELDS:
-            value = csv_to_list(value)
-            value = Json(value)
-
+        if key in JSON_FIELDS:
+            fields.append(f"{key} = %s::jsonb")
+            values.append(json.dumps(value if isinstance(value, list) else [value]))
         elif isinstance(value, str):
-            value = value.strip()
+            fields.append(f"{key} = %s")
+            values.append(value.strip())
+        else:
+            fields.append(f"{key} = %s")
+            values.append(value)
 
-        fields.append(f"{key} = %s")
-        values.append(value)
+    if fields:
+        values.append(recipe_id)
+        query = f"""
+            UPDATE recipes
+            SET {", ".join(fields)}
+            WHERE id = %s
+            RETURNING id
+        """
+        async with conn.cursor() as cur:
+            await cur.execute(query, values)
+            if not await cur.fetchone():
+                raise HTTPException(status_code=404, detail="Recipe not found")
 
-    values.append(recipe_id)
+    if components_data is not None:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM recipe_components WHERE recipe_id = %s", (recipe_id,)
+            )
 
-    query = f"""
-        UPDATE recipes
-        SET {", ".join(fields)}
-        WHERE id = %s
-        RETURNING *
-    """
+            for comp_idx, comp in enumerate(components_data, start=1):
+                comp_id = uuid4()
+                await cur.execute(
+                    """
+                    INSERT INTO recipe_components (id, recipe_id, name, component_order)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        comp_id,
+                        recipe_id,
+                        comp.get("name", "Main"),
+                        comp.get("component_order", comp_idx),
+                    ),
+                )
 
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(query, values)
-        updated = await cur.fetchone()
+                for ing in comp.get("ingredients", []):
+                    ing_id = uuid4()
+                    await cur.execute(
+                        """
+                        INSERT INTO ingredients (id, component_id, raw,  name, amount, amount_value, unit)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            ing_id,
+                            comp_id,
+                            ing.get("raw"),
+                            ing.get("name"),
+                            ing.get("amount"),
+                            ing.get("amount_value"),
+                            ing.get("unit"),
+                        ),
+                    )
 
-        if not updated:
-            raise HTTPException(status_code=404, detail="Recipe not found")
+                for step_idx, step in enumerate(comp.get("steps", []), start=1):
+                    step_id = uuid4()
+                    await cur.execute(
+                        """
+                        INSERT INTO steps (id, component_id, step_order, description, timer_seconds)
+                        VALUES (%s, %s, %s, %s, %s)
+                        """,
+                        (
+                            step_id,
+                            comp_id,
+                            step.get("step_order", step_idx),
+                            step.get("description", ""),
+                            step.get("timer_seconds"),
+                        ),
+                    )
+
+    return await get_recipe(conn, recipe_id)
+
+
+@router.put("/{recipe_id}/image", response_model=RecipeRead)
+async def update_recipe_image(
+    conn: GetConnection,
+    recipe_id: UUID,
+    image: UploadFile = File(...),
+):
+    FRONTEND_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT image_hero_filename, image_thumb_filename
+            FROM recipes
+            WHERE id = %s
+            """,
+            (recipe_id,),
+        )
+        row = await cur.fetchone()
+
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail="Recipe not found",
+        )
+
+    old_hero_filename = row[0]
+    old_thumbnail_filename = row[1]
+
+    image_id = uuid4()
+
+    hero_filename = f"{image_id}-hero.webp"
+    thumbnail_filename = f"{image_id}-thumb.webp"
+
+    hero_path = FRONTEND_IMAGES_DIR / hero_filename
+    thumbnail_path = FRONTEND_IMAGES_DIR / thumbnail_filename
+
+    try:
+        save_recipe_images(
+            image.file,
+            hero_path,
+            thumbnail_path,
+        )
+    except (ValueError, OSError):
+        # Clean up anything that may have been written
+        hero_path.unlink(missing_ok=True)
+        thumbnail_path.unlink(missing_ok=True)
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image file",
+        )
+
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE recipes
+            SET
+                image_hero_filename = %s,
+                image_thumb_filename = %s
+            WHERE id = %s
+            """,
+            (
+                hero_filename,
+                thumbnail_filename,
+                recipe_id,
+            ),
+        )
+
+    if old_hero_filename:
+        (FRONTEND_IMAGES_DIR / old_hero_filename).unlink(missing_ok=True)
+
+    if old_thumbnail_filename:
+        (FRONTEND_IMAGES_DIR / old_thumbnail_filename).unlink(missing_ok=True)
 
     return await get_recipe(conn, recipe_id)

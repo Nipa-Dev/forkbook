@@ -9,6 +9,7 @@ CREATE TYPE recipe_flag_type AS ENUM (
     'made'
 );
 
+
 CREATE TABLE users (
     user_id UUID PRIMARY KEY,
 
@@ -26,36 +27,44 @@ CREATE TABLE users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+
 CREATE TABLE recipes (
     id UUID PRIMARY KEY,
+
     owner_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
 
     title TEXT NOT NULL,
     description TEXT,
     slug TEXT NOT NULL UNIQUE,
 
-    tags TEXT[] DEFAULT '{}',
+    tags TEXT[] NOT NULL DEFAULT '{}',
 
-    equipment JSONB DEFAULT '[]',
-    notes JSONB DEFAULT '[]',
-    storage JSONB DEFAULT '[]',
+    equipment JSONB NOT NULL DEFAULT '[]',
+    notes JSONB NOT NULL DEFAULT '[]',
+    storage JSONB NOT NULL DEFAULT '[]',
 
     cook_time_minutes INTEGER,
     prep_time_minutes INTEGER,
     servings INTEGER,
+
     difficulty recipe_difficulty,
-    image_url TEXT,
+
+    image_hero_filename TEXT,
+    image_thumb_filename TEXT,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT positive_time_cook CHECK (cook_time_minutes IS NULL OR cook_time_minutes > 0),
-    CONSTRAINT positive_time_prep CHECK (prep_time_minutes IS NULL OR prep_time_minutes > 0),
+    CONSTRAINT positive_time_cook CHECK (cook_time_minutes IS NULL OR cook_time_minutes >= 0),
+    CONSTRAINT positive_time_prep CHECK (prep_time_minutes IS NULL OR prep_time_minutes >= 0),
     CONSTRAINT positive_servings CHECK (servings IS NULL or servings > 0),
     CONSTRAINT valid_slug CHECK (slug ~ '^[a-z0-9-]+$')
 );
 
+
 CREATE TABLE recipe_components (
     id UUID PRIMARY KEY,
-    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
 
     name TEXT NOT NULL,
     component_order INTEGER NOT NULL,
@@ -63,66 +72,101 @@ CREATE TABLE recipe_components (
     CONSTRAINT unique_component_order UNIQUE (recipe_id, component_order)
 );
 
+
 CREATE TABLE ingredients (
     id UUID PRIMARY KEY,
-    component_id UUID REFERENCES recipe_components(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
 
+    component_id UUID NOT NULL REFERENCES recipe_components(id) ON DELETE CASCADE,
+
+    raw TEXT NOT NULL,
+
+    name TEXT,
     amount TEXT,
     amount_value NUMERIC(10,3),
-
     unit TEXT,
 
     CONSTRAINT positive_amount
         CHECK (amount_value IS NULL OR amount_value > 0)
 );
+
+
 CREATE TABLE steps (
     id UUID PRIMARY KEY,
-    component_id UUID REFERENCES recipe_components(id) ON DELETE CASCADE,
+
+    component_id UUID NOT NULL
+        REFERENCES recipe_components(id)
+        ON DELETE CASCADE,
 
     step_order INTEGER NOT NULL,
     description TEXT NOT NULL,
     timer_seconds INTEGER,
 
-    CONSTRAINT unique_step_order UNIQUE (component_id, step_order)
+    CONSTRAINT unique_step_order
+        UNIQUE (component_id, step_order),
+
+    CONSTRAINT non_negative_timer
+        CHECK (
+            timer_seconds IS NULL
+            OR timer_seconds >= 0
+        )
 );
+
 
 CREATE TABLE recipe_ratings (
     id UUID PRIMARY KEY,
 
-    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    recipe_id UUID NOT NULL
+        REFERENCES recipes(id)
+        ON DELETE CASCADE,
+
+    user_id UUID NOT NULL
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
 
     rating INTEGER NOT NULL,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
 
-    CONSTRAINT rating_range CHECK (rating BETWEEN 1 AND 5),
-    CONSTRAINT unique_user_recipe_rating UNIQUE (recipe_id, user_id)
+    CONSTRAINT rating_range
+        CHECK (rating BETWEEN 1 AND 5),
+
+    CONSTRAINT unique_user_recipe_rating
+        UNIQUE (recipe_id, user_id)
 );
+
 
 CREATE TABLE refresh_token_sessions (
     id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+
+    user_id UUID NOT NULL
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
     token_hash TEXT NOT NULL UNIQUE,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
-    last_used_at TIMESTAMPTZ,
 
+    last_used_at TIMESTAMPTZ,
     revoked_at TIMESTAMPTZ,
-    
-    rotated_from UUID REFERENCES refresh_token_sessions(id),
-    
+
+    rotated_from UUID
+        REFERENCES refresh_token_sessions(id),
+
     user_agent TEXT,
     ip_address TEXT
 );
 
+
 CREATE TABLE recipe_flags (
     id UUID PRIMARY KEY,
 
-    user_id UUID NOT NULL REFERENCES users(user_id),
-    recipe_id UUID NOT NULL REFERENCES recipes(id),
+    user_id UUID NOT NULL
+        REFERENCES users(user_id),
+
+    recipe_id UUID NOT NULL
+        REFERENCES recipes(id),
 
     flag_type recipe_flag_type NOT NULL,
 
@@ -131,19 +175,22 @@ CREATE TABLE recipe_flags (
     UNIQUE (user_id, recipe_id, flag_type)
 );
 
+
 CREATE VIEW recipe_rating_stats AS
-SELECT 
+SELECT
     r.id AS recipe_id,
     COALESCE(AVG(rr.rating), 0.0)::NUMERIC(3,2) AS average_rating,
     COUNT(rr.id)::INTEGER AS total_ratings
 FROM recipes r
-LEFT JOIN recipe_ratings rr ON r.id = rr.recipe_id
+LEFT JOIN recipe_ratings rr
+    ON r.id = rr.recipe_id
 GROUP BY r.id;
 
+
 CREATE VIEW recipes_with_ratings AS
-SELECT 
-    r.*, 
-    v.average_rating, 
+SELECT
+    r.*,
+    v.average_rating,
     v.total_ratings
 FROM recipes r
 JOIN recipe_rating_stats v ON r.id = v.recipe_id;

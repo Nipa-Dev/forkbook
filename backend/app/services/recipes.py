@@ -18,18 +18,26 @@ def slugify(title: str) -> str:
     return title.strip("-")
 
 
-async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
+async def create_recipe(
+    conn,
+    recipe: RecipeCreate,
+) -> RecipeRead:
     recipe_id = str(uuid.uuid4())
+
     slug = slugify(recipe.title)
+
     async with conn.cursor() as cur:
         await cur.execute(
             """
             INSERT INTO recipes (
                 id, owner_id, title, description, slug,
-                tags, cook_time_minutes, prep_time_minutes, servings, difficulty, image_url,
+                tags, cook_time_minutes, prep_time_minutes, servings, difficulty,
+                image_hero_filename, image_thumb_filename,
                 equipment, notes, storage
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
             """,
             (
                 recipe_id,
@@ -42,7 +50,8 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
                 recipe.prep_time_minutes,
                 recipe.servings,
                 recipe.difficulty,
-                recipe.image_url if recipe.image_url else None,
+                recipe.image_hero_filename,
+                recipe.image_thumb_filename,
                 Json(recipe.equipment),
                 Json(recipe.notes),
                 Json(recipe.storage),
@@ -55,7 +64,10 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
             await cur.execute(
                 """
                 INSERT INTO recipe_components (
-                    id, recipe_id, name, component_order
+                    id,
+                    recipe_id,
+                    name,
+                    component_order
                 )
                 VALUES (%s, %s, %s, %s)
                 """,
@@ -71,14 +83,20 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
                 await cur.execute(
                     """
                     INSERT INTO ingredients (
-                        id, component_id, name,
-                        amount, amount_value, unit
+                        id,
+                        component_id,
+                        raw,
+                        name,
+                        amount,
+                        amount_value,
+                        unit
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         str(uuid.uuid4()),
                         comp_id,
+                        ing.raw,
                         ing.name,
                         ing.amount,
                         ing.amount_value,
@@ -90,8 +108,11 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
                 await cur.execute(
                     """
                     INSERT INTO steps (
-                        id, component_id, step_order,
-                        description, timer_seconds
+                        id,
+                        component_id,
+                        step_order,
+                        description,
+                        timer_seconds
                     )
                     VALUES (%s, %s, %s, %s, %s)
                     """,

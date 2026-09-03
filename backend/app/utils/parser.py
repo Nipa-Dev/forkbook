@@ -67,27 +67,33 @@ def parse_ingredients(ingredients_raw: str) -> list[Ingredient]:
     ingredients_list = []
 
     for line in ingredients_raw.strip().split("\n"):
-        line = re.sub(r"^-\s*", "", line)
-        if not line:
+        clean_line = re.sub(r"^-\s*", "", line).strip()
+        if not clean_line:
             continue
 
-        num_match = re.match(r"^([\d\s/\.,]+)", line)
+        num_match = re.match(r"^([\d\s/\.,]+)", clean_line)
 
         qty_str = ""
-        remaining_text = line
+        remaining_text = clean_line
 
         if num_match:
             qty_str = num_match.group(1).strip()
-            remaining_text = line[num_match.end() :].strip()
+            remaining_text = clean_line[num_match.end() :].strip()
 
         amount_value = parse_quantity(qty_str) if qty_str else None
         unit, name = split_unit_and_name(remaining_text)
 
         amount_str = qty_str or None
 
+        parsed_name = name.strip() if name and len(name.strip()) >= 2 else None
+
         ingredients_list.append(
             Ingredient(
-                name=name, amount=amount_str, amount_value=amount_value, unit=unit
+                raw=clean_line,
+                name=parsed_name,
+                amount=amount_str,
+                amount_value=amount_value,
+                unit=unit or None,
             )
         )
 

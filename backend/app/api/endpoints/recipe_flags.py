@@ -30,25 +30,28 @@ async def get_user_saved_recipes(
 ):
     async with conn.transaction():
         async with conn.cursor(row_factory=dict_row) as cur:
+            query = """
+                SELECT
+                    rf.id AS flag_id,
+                    rf.recipe_id,
+                    rf.flag_type,
+                    r.*
+                FROM recipe_flags rf
+                JOIN recipes r ON r.id = rf.recipe_id
+                WHERE rf.user_id = %s
+            """
+
+            params = [current_user.user_id]
+
             if flag_type:
-                # If a specific flag_type is requested, filter by it
-                await cur.execute(
-                    """
-                    SELECT * FROM recipe_flags
-                    WHERE user_id = %s AND flag_type = %s
-                    """,
-                    (current_user.user_id, flag_type.value),
-                )
-            else:
-                # If no flag_type is provided, fetch all flags for the user
-                await cur.execute(
-                    """
-                    SELECT * FROM recipe_flags
-                    WHERE user_id = %s
-                    """,
-                    (current_user.user_id,),
-                )
+                query += " AND rf.flag_type = %s"
+                params.append(flag_type.value)
+
+            query += " ORDER BY rf.created_at DESC"
+
+            await cur.execute(query, params)
             data = await cur.fetchall()
+
         return data
 
 

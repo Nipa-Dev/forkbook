@@ -1,17 +1,22 @@
 import json
+import logging
 from contextlib import asynccontextmanager
 
 import psycopg_pool
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from jwt.algorithms import RSAAlgorithm
 
 from app.api.endpoints import rating, recipe, recipe_flags, security
 from app.schemas.responses import StatusResponse
 from app.utils.config import get_database_url, settings
 from app.utils.db import State
+
+logger = logging.getLogger("uvicorn.error")
 
 
 @asynccontextmanager
@@ -36,6 +41,19 @@ app.include_router(recipe_flags.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(recipe.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(security.router, prefix="/auth", tags=["Authentication"])
 app.include_router(rating.router, prefix="/rate", tags=["Ratings"])
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"422 Validation Error on {request.method} {request.url}")
+    logger.error(f"Request Body: {body.decode('utf-8', errors='ignore')}")
+    logger.error(f"Validation Errors: {exc.errors()}")
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors()},
+    )
 
 
 @app.get("/", response_model=StatusResponse)

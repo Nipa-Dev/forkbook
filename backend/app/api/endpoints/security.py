@@ -84,12 +84,17 @@ async def create_user(conn: GetConnection, user_in: UserRegister):
                 ),
             )
             new_user = await cur.fetchone()
-
-            return {
-                "status": "success",
-                "user_id": str(new_user[0]),
-                "username": new_user[1],
-            }
+            if new_user:
+                return {
+                    "status": "success",
+                    "user_id": str(new_user[0]),
+                    "username": new_user[1],
+                }
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create user record",
+                )
     except UniqueViolation:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
