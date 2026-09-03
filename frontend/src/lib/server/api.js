@@ -3,12 +3,19 @@ const API_URL = 'http://127.0.0.1:8000';
 export async function api(path, options = {}, svelteFetch = null) {
   const fetcher = svelteFetch || fetch;
 
+  const headers = new Headers(options.headers);
+  let body = options.body;
+
+  if (body instanceof FormData) {
+    headers.delete('content-type');
+  } else if (!headers.has('content-type')) {
+    headers.set('content-type', 'application/json');
+  }
+
   const res = await fetcher(`${API_URL}${path}`, {
     ...options,
-    headers: {
-      'content-type': 'application/json',
-      ...(options.headers || {})
-    }
+    headers,
+    body
   });
 
   if (res.status === 401 || res.status === 403) {

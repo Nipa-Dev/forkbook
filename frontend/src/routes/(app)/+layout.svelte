@@ -13,8 +13,11 @@
 
 <Sidebar.Provider>
   <AppSidebar />
-  <main class="flex-1 w-full p-6">
-    <Sidebar.Trigger />
-    {@render children?.()}
-  </main>
+
+  <Sidebar.Inset>
+    <main>
+      <Sidebar.Trigger />
+      {@render children?.()}
+    </main>
+  </Sidebar.Inset>
 </Sidebar.Provider>

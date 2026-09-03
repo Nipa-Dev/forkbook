@@ -11,6 +11,7 @@
     return recipe.components?.reduce((sum, comp) => sum + (comp.ingredients?.length ?? 0), 0) ?? 0;
   };
 
+  const getImageUrl = (filename) => `/images/${filename}`;
   const totalPages = $derived(Math.ceil(data.recipes.total / data.recipes.page_size));
 
   const buildPageUrl = (newPage) => {
@@ -30,9 +31,9 @@
   {#each data.recipes.items as recipe (recipe.id)}
     <a href={`/recipes/${recipe.id}`} data-sveltekit-preload-data="tap" class="block h-full">
       <Card.Root class="h-full overflow-hidden hover:shadow-md transition">
-        {#if recipe.image_url}
+        {#if recipe.image_thumb_filename}
           <img
-            src={recipe.image_url}
+            src={getImageUrl(recipe.image_thumb_filename)}
             alt={recipe.title}
             class="w-full aspect-4/3 lg:aspect-video object-cover"
             loading="lazy"
