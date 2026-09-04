@@ -31,12 +31,12 @@
 
         <div class="space-y-2">
           <Label for="image_file">Recipe image</Label>
-          <p class="text-sm text-muted-foreground">PNG, JPEG, or WebP image</p>
+          <p class="text-sm text-muted-foreground">Image file</p>
           <Input
             type="file"
             id="image_file"
             name="image_file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
           />
         </div>
       </CardContent>

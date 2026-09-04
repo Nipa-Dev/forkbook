@@ -3,56 +3,23 @@
   import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
   import { Textarea } from '$lib/components/ui/textarea';
+  import * as Card from '$lib/components/ui/card';
   import * as Select from '$lib/components/ui/select';
 
   let { data } = $props();
 
   const recipeId = $derived(data.recipe?.id ?? '');
   const toList = (value) => (Array.isArray(value) ? value.join(', ') : (value ?? ''));
-
   const toLines = (value) => (Array.isArray(value) ? value.join('\n') : (value ?? ''));
 
   function ingredientForEditor(ingredient) {
-    if (ingredient.raw) {
+    if (ingredient?.raw) {
       return { raw: ingredient.raw };
     }
-
     return {
-      raw: [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ')
+      raw: [ingredient?.amount, ingredient?.unit, ingredient?.name].filter(Boolean).join(' ')
     };
   }
-
-  let form = $state({
-    title: '',
-    description: '',
-    cook_time_minutes: '',
-    prep_time_minutes: '',
-    servings: '',
-    tags: '',
-    equipment: '',
-    notes: '',
-    storage: '',
-    difficulty: 'easy'
-  });
-
-  let components = $state([]);
-
-  $effect(() => {
-    const recipe = data.recipe;
-
-    form.title = recipe?.title ?? '';
-    form.description = recipe?.description ?? '';
-    form.cook_time_minutes = recipe?.cook_time_minutes ?? '';
-    form.prep_time_minutes = recipe?.prep_time_minutes ?? '';
-    form.servings = recipe?.servings ?? '';
-    form.tags = toList(recipe?.tags);
-    form.equipment = toList(recipe?.equipment);
-    form.notes = toLines(recipe?.notes);
-    form.storage = toLines(recipe?.storage);
-    form.difficulty = recipe?.difficulty ?? 'easy';
-
-    components = componentsForEditor(recipe?.components);
-  });
 
   const emptyComponent = () => ({
     name: 'Main',
@@ -66,15 +33,26 @@
       return [emptyComponent()];
     }
 
-    return components.map((component) => {
-      const ingredients = component.ingredients.map(ingredientForEditor);
-
-      return {
-        ...component,
-        ingredients
-      };
-    });
+    return components.map((component) => ({
+      ...component,
+      ingredients: component.ingredients?.map(ingredientForEditor) ?? [{ raw: '' }]
+    }));
   }
+
+  let form = $state({
+    title: data.recipe?.title ?? '',
+    description: data.recipe?.description ?? '',
+    cook_time_minutes: data.recipe?.cook_time_minutes ?? '',
+    prep_time_minutes: data.recipe?.prep_time_minutes ?? '',
+    servings: data.recipe?.servings ?? '',
+    tags: toList(data.recipe?.tags),
+    equipment: toList(data.recipe?.equipment),
+    notes: toLines(data.recipe?.notes),
+    storage: toLines(data.recipe?.storage),
+    difficulty: data.recipe?.difficulty ?? 'easy'
+  });
+
+  let components = $state(componentsForEditor(data.recipe?.components));
 
   const difficultyOptions = [
     { value: 'easy', label: 'Easy' },
@@ -82,16 +60,12 @@
     { value: 'hard', label: 'Hard' }
   ];
 
-  let difficulty = $derived(data.recipe?.difficulty ?? 'easy');
-
   const triggerContent = $derived(
     difficultyOptions.find((o) => o.value === form.difficulty)?.label ?? 'Select difficulty'
   );
 
   const payloadComponents = $derived(components);
 </script>
-
-<ModeWatcher defaultMode="dark" />
 
 <form
   method="POST"
@@ -133,9 +107,9 @@
         <Label for="image">Recipe Image</Label>
         <Input id="image" name="image" type="file" accept="image/*" />
 
-        {#if data.recipe?.image_filename}
+        {#if data.recipe?.image_hero_filename}
           <p class="text-sm text-muted-foreground">
-            Current image: {data.recipe.image_filename}
+            Current images: {data.recipe.image_hero_filename}
           </p>
         {/if}
       </div>

@@ -1,33 +1,58 @@
 import { api } from '$lib/server/api';
 import { fail, redirect } from '@sveltejs/kit';
 
+function parseArray(value, delimiter = ',') {
+  if (!value) return [];
+
+  return value
+    .toString()
+    .split(delimiter)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
+function parseComponents(value) {
+  if (!value) return [];
+
+  try {
+    return JSON.parse(value.toString());
+  } catch {
+    return [];
+  }
+}
+
 export async function load({ params }) {
   const recipe = await api(`/recipes/${params.id}`);
 
-  return {
-    recipe
-  };
+  return { recipe };
 }
 
 export const actions = {
   save: async ({ request, params }) => {
-    const form = await request.formData();
+    const data = await request.formData();
 
     const payload = {
-      title: form.get('title'),
-      description: form.get('description'),
-      difficulty: form.get('difficulty'),
-      image_url: form.get('image_url'),
-
+      title: data.get('title')?.toString().trim() ?? '',
+      description: data.get('description')?.toString().trim() || null,
+      image_url: data.get('image_url')?.toString().trim() || null,
       difficulty: data.get('difficulty')?.toString() || 'easy',
 
       prep_time_minutes: parseNumber(data.get('prep_time_minutes')),
       cook_time_minutes: parseNumber(data.get('cook_time_minutes')),
       servings: parseNumber(data.get('servings')),
 
-      tags: parseArray(data.get('tags')),
-      equipment: parseArray(data.get('equipment')),
-
+      tags: parseArray(data.get('tags'), ','),
+      equipment: parseArray(data.get('equipment'), ','),
       notes: parseArray(data.get('notes'), '\n'),
       storage: parseArray(data.get('storage'), '\n'),
 
@@ -55,7 +80,7 @@ export const actions = {
     } catch (err) {
       console.error('API Save Error:', err);
 
-      return fail(err?.status ?? 500, {
+      return fail(500, {
         error: 'Failed to save recipe'
       });
     }

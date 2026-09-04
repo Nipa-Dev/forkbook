@@ -4,6 +4,7 @@
   import BookOpen from 'lucide-svelte/icons/book-open';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import Bookmark from 'lucide-svelte/icons/bookmark';
+  import { Upload } from 'lucide-svelte';
 
   // Menu items.
   const items = [
@@ -26,6 +27,11 @@
       title: 'Bookmarks',
       url: '/bookmarks',
       icon: Bookmark
+    },
+    {
+      title: 'Import recipe',
+      url: '/editor/import',
+      icon: Upload
     }
   ];
 </script>
