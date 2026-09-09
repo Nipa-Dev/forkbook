@@ -32,12 +32,7 @@
         <div class="space-y-2">
           <Label for="image_file">Recipe image</Label>
           <p class="text-sm text-muted-foreground">Image file</p>
-          <Input
-            type="file"
-            id="image_file"
-            name="image_file"
-            accept="image/*"
-          />
+          <Input type="file" id="image_file" name="image_file" accept="image/*" />
         </div>
       </CardContent>
       <CardFooter class="justify-end">

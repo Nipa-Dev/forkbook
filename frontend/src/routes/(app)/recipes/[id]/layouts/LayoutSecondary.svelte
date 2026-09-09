@@ -1,6 +1,7 @@
 <script>
   import { enhance } from '$app/forms';
   import { Badge } from '$lib/components/ui/badge';
+  import { Checkbox } from '$lib/components/ui/checkbox';
   import { Star, Bookmark, CheckCircle } from 'lucide-svelte';
 
   let { recipe } = $props();
@@ -191,22 +192,30 @@
       <section class="space-y-8 mb-14">
         <h2 class="text-xl font-semibold border-b pb-2">Instructions</h2>
 
-        {#each recipe.components ?? [] as component}
+        {#each recipe.components ?? [] as component, compIndex}
           <div class="space-y-4">
-            <h3 class="text-sm font-semibold">
-              {component.name}
-            </h3>
+            {#if component.name}
+              <h3 class="text-sm font-semibold">
+                {component.name}
+              </h3>
+            {/if}
 
-            <ol class="list-decimal list-outside pl-5 space-y-4 text-sm leading-relaxed">
-              {#each component.steps ?? [] as step}
-                <li class="pl-2">
-                  {step.description}
-
-                  {#if step.timer_seconds}
-                    <span class="text-xs text-muted-foreground ml-2">
-                      ({Math.floor(step.timer_seconds / 60)} min)
-                    </span>
-                  {/if}
+            <ol class="space-y-4 text-sm leading-relaxed">
+              {#each component.steps ?? [] as step, stepIndex}
+                {@const stepId = `step-${compIndex}-${stepIndex}`}
+                <li class="flex items-start gap-3 text-sm">
+                  <span class="font-mono w-5 shrink-0 text-right">
+                    {stepIndex + 1}.
+                  </span>
+                  <Checkbox id={stepId} class="mt-0.5 shrink-0" />
+                  <label for={stepId} class="cursor-pointer select-none leading-normal flex-1">
+                    {step.description}
+                    {#if step.timer_seconds}
+                      <span class="text-xs text-muted-foreground ml-2 whitespace-nowrap">
+                        ({Math.floor(step.timer_seconds / 60)} min)
+                      </span>
+                    {/if}
+                  </label>
                 </li>
               {/each}
             </ol>
