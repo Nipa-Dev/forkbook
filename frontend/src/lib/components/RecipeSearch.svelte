@@ -27,7 +27,7 @@
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>Search recipes</Dialog.Title>
-      <Dialog.Description>Search by recipe name or ingredient.</Dialog.Description>
+      <Dialog.Description>Search by recipe name.</Dialog.Description>
     </Dialog.Header>
 
     <form onsubmit={handleSubmit} class="flex gap-2">

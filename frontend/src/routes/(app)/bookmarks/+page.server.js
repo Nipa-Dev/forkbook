@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { api } from '$lib/server/api';
 
 export async function load({ fetch, cookies }) {
@@ -6,7 +6,7 @@ export async function load({ fetch, cookies }) {
 
   try {
     const recipes = await api(
-      '/recipes/saved?flag_type=made',
+      '/recipes/saved?flag_type=bookmark',
       {
         method: 'GET',
         headers: {
@@ -18,7 +18,6 @@ export async function load({ fetch, cookies }) {
 
     return { recipes };
   } catch (error) {
-    console.error(error);
     const statusCode = err?.status || err?.response?.status || 500;
     const errorMessage = err?.message || 'Failed to load saved recipes.';
 

@@ -311,14 +311,7 @@
 
       <div class="space-y-2">
         <Label for="servings">Servings</Label>
-        <Input
-          id="servings"
-          name="servings"
-          type="number"
-          min="1"
-          placeholder="4"
-          bind:value={form.servings}
-        />
+        <Input id="servings" name="servings" type="number" min="1" bind:value={form.servings} />
       </div>
     </Card.Content>
   </Card.Root>

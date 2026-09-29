@@ -2,7 +2,8 @@
   import { enhance } from '$app/forms';
   import { Badge } from '$lib/components/ui/badge';
   import { Checkbox } from '$lib/components/ui/checkbox';
-  import { Star, Bookmark, CheckCircle } from 'lucide-svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Star, Bookmark, CheckCircle, Minus, Plus } from 'lucide-svelte';
 
   let { recipe } = $props();
 
@@ -18,6 +19,21 @@
     bookmarkedState = !!recipe.is_bookmarked;
     madeState = !!recipe.is_made;
   });
+
+  const initial_servings = $derived(recipe?.servings ?? 1);
+  let current_servings = $state(recipe?.servings ?? 1);
+
+  let multiplier = $derived(initial_servings > 0 ? current_servings / initial_servings : 1);
+
+  function scaleAmount(amountValue, amountOriginal) {
+    if (!amountValue) return amountOriginal ?? '';
+
+    if (multiplier === 1) {
+      return amountOriginal ?? amountValue;
+    }
+
+    return (amountValue * multiplier).toFixed(2).replace(/\.00$/, '');
+  }
 </script>
 
 <article class="max-w-5xl mx-auto px-6 py-8">
@@ -59,7 +75,7 @@
 
   <section class="border-y py-5 mb-8">
     <div class="grid grid-cols-3 gap-x-8 gap-y-5 w-fit">
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1.5">
         <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
           Cook
         </span>
@@ -68,7 +84,7 @@
         </span>
       </div>
 
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1.5">
         <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
           Prep
         </span>
@@ -77,7 +93,7 @@
         </span>
       </div>
 
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1.5">
         <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
           Rating
         </span>
@@ -118,16 +134,37 @@
         </div>
       </div>
 
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1.5">
         <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
           Servings
         </span>
         <span class="text-sm">
-          {recipe.servings ?? '--'}
+          <div class="flex items-center gap-3">
+            <Button
+              variant="outline"
+              class="rounded-full text-muted-foreground"
+              size="icon-sm"
+              onclick={() => (current_servings = Math.max(1, current_servings - 1))}
+              disabled={current_servings <= 1}
+            >
+              <Minus />
+            </Button>
+
+            <span class="font-medium min-w-4 text-center">{current_servings}</span>
+
+            <Button
+              variant="outline"
+              class="rounded-full text-muted-foreground"
+              size="icon-sm"
+              onclick={() => current_servings++}
+            >
+              <Plus />
+            </Button>
+          </div>
         </span>
       </div>
 
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1.5">
         <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
           Difficulty
         </span>
@@ -144,17 +181,20 @@
 
       <button
         type="submit"
-        class="flex items-center gap-2 text-xs font-medium hover:text-foreground cursor-pointer bg-transparent border-none p-0"
-        aria-label={bookmarkedState ? 'Remove bookmark' : 'Bookmark recipe'}
+        class={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
+          bookmarkedState
+            ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
+            : 'bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground'
+        }`}
       >
         <Bookmark
-          size={16}
-          class={bookmarkedState ? 'text-primary' : 'text-muted-foreground'}
+          size={15}
+          class={bookmarkedState ? 'fill-current text-primary-foreground' : 'text-muted-foreground'}
           fill={bookmarkedState ? 'currentColor' : 'none'}
         />
 
         <span>
-          {bookmarkedState ? 'Bookmarked' : 'Add Bookmark'}
+          {bookmarkedState ? 'Bookmarked' : 'Bookmark'}
         </span>
       </button>
     </form>
@@ -164,14 +204,13 @@
 
       <button
         type="submit"
-        class="flex items-center gap-2 text-xs font-medium hover:text-foreground cursor-pointer bg-transparent border-none p-0"
-        aria-label={madeState ? 'Mark as unmade' : 'Mark Made'}
+        class={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
+          madeState
+            ? 'bg-foreground text-background border-foreground hover:bg-foreground/90'
+            : 'bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground'
+        }`}
       >
-        <CheckCircle
-          size={16}
-          fill="none"
-          class={madeState ? 'text-foreground' : 'text-muted-foreground'}
-        />
+        <CheckCircle size={15} class={madeState ? 'text-background' : 'text-muted-foreground'} />
 
         <span>
           {madeState ? 'Made' : 'Mark Made'}
@@ -289,13 +328,19 @@
             <ul class="list-disc list-outside pl-5 space-y-1 text-sm leading-relaxed">
               {#each component.ingredients ?? [] as ingredient}
                 <li>
+                  {ingredient.amount_value != null
+                    ? scaleAmount(ingredient.amount_value, ingredient.amount)
+                    : ''}
+                  {ingredient.unit ? ` ${ingredient.unit}` : ''}
+                  {ingredient.name ?? ''}
+                  <!--
                   {#if ingredient.raw}
                     {ingredient.raw}
                   {:else}
                     {ingredient.amount ?? ''}
                     {ingredient.unit ? ` ${ingredient.unit}` : ''}
                     {ingredient.name ?? ''}
-                  {/if}
+                  {/if}-->
                 </li>
               {/each}
             </ul>

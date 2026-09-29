@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-  <title>Cookbook</title>
+  <title>Bookmarks</title>
 </svelte:head>
 
 <article class="max-w-6xl mx-auto px-6 py-8">
@@ -19,11 +19,11 @@
     <div class="flex items-center gap-3 mb-3">
       <Bookmark size={20} class="text-primary" fill="currentColor" />
 
-      <h1 class="text-3xl font-semibold tracking-tight">Cookbook</h1>
+      <h1 class="text-3xl font-semibold tracking-tight">Bookmarks</h1>
     </div>
 
     <p class="text-muted-foreground">
-      Your saved recipes. You have {recipes.length} saved recipes
+      Your bookmarked recipes. You have {recipes.length} bookmarked recipes
     </p>
   </header>
 
