@@ -164,9 +164,11 @@ CREATE TABLE recipe_flags (
 
     user_id UUID NOT NULL
         REFERENCES users(user_id),
+        ON DELETE CASCADE,
 
     recipe_id UUID NOT NULL
         REFERENCES recipes(id),
+        ON DELETE CASCADE,
 
     flag_type recipe_flag_type NOT NULL,
 
