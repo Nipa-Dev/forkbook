@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     TAG_MAX_COUNT: int = 5
     TAG_MAX_LENGTH: int = 15
 
-    VALID_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png"}
+    VALID_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png", ".webp"}
 
     class Config:
         env_file = "../.env"

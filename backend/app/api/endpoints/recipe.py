@@ -10,7 +10,7 @@ from app.services.recipes import create_recipe, get_recipe_ids
 from app.utils.config import settings
 from app.utils.db import GetConnection
 from app.utils.images import save_recipe_images
-from app.utils.parser import parse_recipe
+from app.utils.parser import parse_ingredients, parse_recipe
 
 router = APIRouter()
 
@@ -39,9 +39,9 @@ async def get_recipes(
             params.append(tag)
 
         if search:
-            conditions.append("(title ILIKE %s OR description ILIKE %s)")
+            conditions.append("title ILIKE %s")
             like = f"%{search}%"
-            params.extend([like, like])
+            params.append(like)
 
         where_clause = ""
         if conditions:
@@ -343,19 +343,36 @@ async def update_recipe(
 
                 for ing in comp.get("ingredients", []):
                     ing_id = uuid4()
+
+                    raw_text = ing.get("raw")
+                    name = ing.get("name")
+                    amount = ing.get("amount")
+                    amount_value = ing.get("amount_value")
+                    unit = ing.get("unit")
+
+                    # Re-parse if raw text exists but structured fields are missing
+                    if raw_text and not name:
+                        parsed_list = parse_ingredients(raw_text)
+                        if parsed_list:
+                            parsed = parsed_list[0]
+                            name = parsed.name
+                            amount = parsed.amount
+                            amount_value = parsed.amount_value
+                            unit = parsed.unit
+
                     await cur.execute(
                         """
-                        INSERT INTO ingredients (id, component_id, raw,  name, amount, amount_value, unit)
+                        INSERT INTO ingredients (id, component_id, raw, name, amount, amount_value, unit)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             ing_id,
                             comp_id,
-                            ing.get("raw"),
-                            ing.get("name"),
-                            ing.get("amount"),
-                            ing.get("amount_value"),
-                            ing.get("unit"),
+                            raw_text,
+                            name,
+                            amount,
+                            amount_value,
+                            unit,
                         ),
                     )
 

@@ -5,24 +5,22 @@ from app.exceptions import InvalidRecipeError
 from app.schemas.recipe import Ingredient, RecipeComponent, RecipeCreate, Step
 
 VALID_UNITS = {
-    "g",
-    "kg",
-    "ml",
-    "l",
-    "tbsp",
-    "tsp",
-    "cup",
-    "cups",
-    "oz",
-    "lb",
-    "lbs",
-    "piece",
-    "pieces",
-    "can",
-    "cans",
-    "pinch",
-    "pinches",
-}
+    "g", "gram", "grams",
+    "kg", "kilogram", "kilograms",
+    "lb", "lbs", "pound", "pounds",
+    "oz", "ounce", "ounces",
+
+    "can", "cans",
+    "cup", "cups",
+    "l", "liter", "liters",
+    "ml", "milliliter", "milliliters",
+    "tbsp", "tablespoon", "tablespoons",
+    "tsp", "teaspoon", "teaspoons",
+
+    "pc", "pcs", "piece", "pieces",
+    "pinch", "pinches",
+    "slice", "slices",
+}  # fmt: skip
 
 # TODO: Add conversion helpers
 
@@ -65,8 +63,9 @@ def split_unit_and_name(text: str) -> tuple:
 
 def parse_ingredients(ingredients_raw: str) -> list[Ingredient]:
     ingredients_list = []
+    normalized_raw = ingredients_raw.replace("\r\n", "\n").replace("\r", "\n")
 
-    for line in ingredients_raw.strip().split("\n"):
+    for line in normalized_raw.strip().split("\n"):
         clean_line = re.sub(r"^-\s*", "", line).strip()
         if not clean_line:
             continue
