@@ -39,9 +39,9 @@ CREATE TABLE recipes (
 
     tags TEXT[] NOT NULL DEFAULT '{}',
 
-    equipment JSONB NOT NULL DEFAULT '[]',
-    notes JSONB NOT NULL DEFAULT '[]',
-    storage JSONB NOT NULL DEFAULT '[]',
+    equipment TEXT[] NOT NULL DEFAULT '{}',
+    notes TEXT[] NOT NULL DEFAULT '{}',
+    storage TEXT[] NOT NULL DEFAULT '{}',
 
     cook_time_minutes INTEGER,
     prep_time_minutes INTEGER,
@@ -161,22 +161,12 @@ CREATE TABLE refresh_token_sessions (
 
 CREATE TABLE recipe_flags (
     id UUID PRIMARY KEY,
-
-    user_id UUID NOT NULL
-        REFERENCES users(user_id),
-        ON DELETE CASCADE,
-
-    recipe_id UUID NOT NULL
-        REFERENCES recipes(id),
-        ON DELETE CASCADE,
-
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     flag_type recipe_flag_type NOT NULL,
-
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    UNIQUE (user_id, recipe_id, flag_type)
+    CONSTRAINT unique_user_recipe_flag UNIQUE (user_id, recipe_id, flag_type)
 );
-
 
 CREATE VIEW recipe_rating_stats AS
 SELECT
