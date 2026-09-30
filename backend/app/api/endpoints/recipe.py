@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -6,11 +5,16 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from psycopg.rows import dict_row
 
 from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate
-from app.services.recipes import create_recipe, get_recipe_ids
+from app.services.recipes import (
+    create_recipe,
+    fetch_recipe,
+    get_recipe_ids,
+    insert_recipe_components,
+)
 from app.utils.config import settings
 from app.utils.db import GetConnection
 from app.utils.images import save_recipe_images
-from app.utils.parser import parse_ingredients, parse_recipe
+from app.utils.parser import parse_recipe
 
 router = APIRouter()
 
@@ -27,7 +31,6 @@ async def get_recipes(
     page_size: int = Query(default=10, ge=1, le=100),
     page: int = Query(default=1, ge=1),
 ):
-    result = []
     offset = (page - 1) * page_size
 
     async with conn.cursor(row_factory=dict_row) as cur:
@@ -40,90 +43,31 @@ async def get_recipes(
 
         if search:
             conditions.append("title ILIKE %s")
-            like = f"%{search}%"
-            params.append(like)
+            params.append(f"%{search}%")
 
-        where_clause = ""
-        if conditions:
-            where_clause += " WHERE " + " AND ".join(conditions)
+        where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
 
-        count_query = f"""
-            SELECT COUNT(*) AS total
-            FROM recipes
-            {where_clause}
-        """
-
+        # Total count
+        count_query = f"SELECT COUNT(*) AS total FROM recipes{where_clause}"
         await cur.execute(count_query, params)
-        total = (await cur.fetchone())["total"]
+        row = await cur.fetchone()
+        total = row["total"] if row else 0
 
-        recipe_query = f"""
-            SELECT *
+        id_query = f"""
+            SELECT id
             FROM recipes_with_ratings
             {where_clause}
             ORDER BY title
-            LIMIT %s
-            OFFSET %s
+            LIMIT %s OFFSET %s
         """
+        await cur.execute(id_query, [*params, page_size, offset])
+        rows = await cur.fetchall()
 
-        await cur.execute(recipe_query, [*params, page_size, offset])
-        recipes = await cur.fetchall()
-        for recipe in recipes:
-            recipe_id = recipe["id"]
-
-            await cur.execute(
-                """
-                SELECT *
-                FROM recipe_components
-                WHERE recipe_id = %s
-                ORDER BY component_order
-                """,
-                (recipe_id,),
-            )
-            components = await cur.fetchall()
-
-            full_components = []
-
-            for comp in components:
-                comp_id = comp["id"]
-
-                await cur.execute(
-                    """
-                    SELECT *
-                    FROM ingredients
-                    WHERE component_id = %s
-                    """,
-                    (comp_id,),
-                )
-                ingredients = await cur.fetchall()
-
-                await cur.execute(
-                    """
-                    SELECT *
-                    FROM steps
-                    WHERE component_id = %s
-                    ORDER BY step_order
-                    """,
-                    (comp_id,),
-                )
-                steps = await cur.fetchall()
-
-                full_components.append(
-                    {
-                        **comp,
-                        "ingredients": ingredients,
-                        "steps": steps,
-                    }
-                )
-            try:
-                result.append(
-                    RecipeRead(
-                        **recipe,
-                        components=full_components,
-                    )
-                )
-            except Exception as e:
-                print(e)
-                raise
+        result: list[RecipeRead] = []
+        for row in rows:
+            recipe = await fetch_recipe(cur, row["id"])
+            if recipe:
+                result.append(recipe)
 
     return PaginatedRecipes(
         items=result,
@@ -176,22 +120,12 @@ async def import_recipe(
                 detail=f"Failed to process image: {e}",
             )
 
-    created_recipe = await create_recipe(
-        conn,
-        recipe,
-    )
-
-    return RecipeRead(
-        **created_recipe.model_dump(),
-    )
+    return await create_recipe(conn, recipe)
 
 
-@router.post("/", response_model=RecipeRead)
+@router.post("/", response_model=RecipeRead, status_code=status.HTTP_201_CREATED)
 async def add_recipe(conn: GetConnection, recipe: RecipeCreate):
-    created_recipe = await create_recipe(conn, recipe)
-    return RecipeRead(
-        **created_recipe.model_dump(), average_rating=0.0, total_ratings=0
-    )
+    return await create_recipe(conn, recipe)
 
 
 @router.get("/ids", response_model=list[str])
@@ -202,64 +136,11 @@ async def list_recipe_ids(conn: GetConnection):
 @router.get("/{recipe_id}", response_model=RecipeRead)
 async def get_recipe(conn: GetConnection, recipe_id: UUID):
     async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(
-            "SELECT * FROM recipes_with_ratings WHERE id = %s",
-            (recipe_id,),
-        )
-        recipe = await cur.fetchone()
-
+        recipe = await fetch_recipe(cur, recipe_id)
         if not recipe:
             raise HTTPException(status_code=404, detail="Recipe not found")
 
-        await cur.execute(
-            """
-            SELECT *
-            FROM recipe_components
-            WHERE recipe_id = %s
-            ORDER BY component_order
-            """,
-            (recipe_id,),
-        )
-        components = await cur.fetchall()
-
-        full_components = []
-
-        for comp in components:
-            comp_id = comp["id"]
-
-            await cur.execute(
-                """
-                SELECT *
-                FROM ingredients
-                WHERE component_id = %s
-                """,
-                (comp_id,),
-            )
-            ingredients = await cur.fetchall()
-
-            await cur.execute(
-                """
-                SELECT *
-                FROM steps
-                WHERE component_id = %s
-                ORDER BY step_order
-                """,
-                (comp_id,),
-            )
-            steps = await cur.fetchall()
-
-            full_components.append(
-                {
-                    **comp,
-                    "ingredients": ingredients,
-                    "steps": steps,
-                }
-            )
-
-    return RecipeRead(
-        **recipe,
-        components=full_components,
-    )
+    return recipe
 
 
 @router.delete("/{recipe_id}")
@@ -285,114 +166,49 @@ async def update_recipe(
     updates = recipe.model_dump(exclude_unset=True)
 
     if not updates:
-        raise HTTPException(status_code=400, detail="No fields provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields provided",
+        )
 
-    components_data = updates.pop("components", None)
+    components = updates.pop("components", None)
 
-    JSON_FIELDS = {"equipment", "notes", "storage"}
-    fields = []
-    values = []
+    if updates:
+        fields = [f"{key} = %s" for key in updates.keys()]
+        values = list(updates.values())
 
-    for key, value in updates.items():
-        if value is None:
-            continue
+    async with conn.transaction():
+        async with conn.cursor(row_factory=dict_row) as cur:
+            if updates:
+                values.append(recipe_id)
+                query = f"""
+                    UPDATE recipes
+                    SET {", ".join(fields)}
+                    WHERE id = %s
+                    RETURNING id
+                """
+                await cur.execute(query, values)
+                if not await cur.fetchone():
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Recipe not found",
+                    )
 
-        if key in JSON_FIELDS:
-            fields.append(f"{key} = %s::jsonb")
-            values.append(json.dumps(value if isinstance(value, list) else [value]))
-        elif isinstance(value, str):
-            fields.append(f"{key} = %s")
-            values.append(value.strip())
-        else:
-            fields.append(f"{key} = %s")
-            values.append(value)
-
-    if fields:
-        values.append(recipe_id)
-        query = f"""
-            UPDATE recipes
-            SET {", ".join(fields)}
-            WHERE id = %s
-            RETURNING id
-        """
-        async with conn.cursor() as cur:
-            await cur.execute(query, values)
-            if not await cur.fetchone():
-                raise HTTPException(status_code=404, detail="Recipe not found")
-
-    if components_data is not None:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "DELETE FROM recipe_components WHERE recipe_id = %s", (recipe_id,)
-            )
-
-            for comp_idx, comp in enumerate(components_data, start=1):
-                comp_id = uuid4()
+            if components is not None:
                 await cur.execute(
-                    """
-                    INSERT INTO recipe_components (id, recipe_id, name, component_order)
-                    VALUES (%s, %s, %s, %s)
-                    """,
-                    (
-                        comp_id,
-                        recipe_id,
-                        comp.get("name", "Main"),
-                        comp.get("component_order", comp_idx),
-                    ),
+                    "DELETE FROM recipe_components WHERE recipe_id = %s",
+                    (recipe_id,),
+                )
+                await insert_recipe_components(cur, recipe_id, components)
+
+            updated_recipe = await fetch_recipe(cur, recipe_id)
+            if not updated_recipe:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Recipe not found",
                 )
 
-                for ing in comp.get("ingredients", []):
-                    ing_id = uuid4()
-
-                    raw_text = ing.get("raw")
-                    name = ing.get("name")
-                    amount = ing.get("amount")
-                    amount_value = ing.get("amount_value")
-                    unit = ing.get("unit")
-
-                    # Re-parse if raw text exists but structured fields are missing
-                    if raw_text and not name:
-                        parsed_list = parse_ingredients(raw_text)
-                        if parsed_list:
-                            parsed = parsed_list[0]
-                            name = parsed.name
-                            amount = parsed.amount
-                            amount_value = parsed.amount_value
-                            unit = parsed.unit
-
-                    await cur.execute(
-                        """
-                        INSERT INTO ingredients (id, component_id, raw, name, amount, amount_value, unit)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (
-                            ing_id,
-                            comp_id,
-                            raw_text,
-                            name,
-                            amount,
-                            amount_value,
-                            unit,
-                        ),
-                    )
-
-                for step_idx, step in enumerate(comp.get("steps", []), start=1):
-                    step_id = uuid4()
-                    await cur.execute(
-                        """
-                        INSERT INTO steps (id, component_id, step_order, description, timer_seconds)
-                        VALUES (%s, %s, %s, %s, %s)
-                        """,
-                        (
-                            step_id,
-                            comp_id,
-                            step.get("step_order", step_idx),
-                            step.get("description", ""),
-                            step.get("timer_seconds"),
-                        ),
-                    )
-
-    return await get_recipe(conn, recipe_id)
+            return updated_recipe
 
 
 @router.put("/{recipe_id}/image", response_model=RecipeRead)
