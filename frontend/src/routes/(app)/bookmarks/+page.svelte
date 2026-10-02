@@ -15,25 +15,32 @@
 </svelte:head>
 
 <article class="max-w-6xl mx-auto px-6 py-8">
-  <header class="mb-10">
-    <div class="flex items-center gap-3 mb-3">
-      <Bookmark size={20} class="text-primary" fill="currentColor" />
-
-      <h1 class="text-3xl font-semibold tracking-tight">Bookmarks</h1>
+  <header class="mb-8 border-b pb-6">
+    <div class="flex items-center gap-3">
+      <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+        <Bookmark size={22} fill="currentColor" />
+      </div>
+      <div>
+        <h1 class="text-3xl font-semibold tracking-tight">Bookmarks</h1>
+        <p class="text-sm text-muted-foreground mt-0.5">
+          {recipes.length}
+          {recipes.length === 1 ? 'recipe' : 'recipes'} saved for quick access
+        </p>
+      </div>
     </div>
-
-    <p class="text-muted-foreground">
-      Your bookmarked recipes. You have {recipes.length} bookmarked recipes
-    </p>
   </header>
 
   {#if recipes.length === 0}
-    <section class="border rounded-xl px-6 py-16 text-center">
-      <Bookmark size={28} class="mx-auto mb-4 text-muted-foreground" />
-
-      <h2 class="text-lg font-semibold mb-2">Your cookbook is empty</h2>
-
-      <p class="text-sm text-muted-foreground">Recipes you bookmark will appear here.</p>
+    <section class="border border-dashed rounded-xl px-6 py-16 text-center bg-muted/30">
+      <div
+        class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4"
+      >
+        <Bookmark size={24} class="text-blue-500" />
+      </div>
+      <h2 class="text-lg font-semibold mb-1">No bookmarked recipes yet</h2>
+      <p class="text-sm text-muted-foreground max-w-sm mx-auto">
+        Click the bookmark icon on any recipe to save it here for later reference.
+      </p>
     </section>
   {:else}
     <div class="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">

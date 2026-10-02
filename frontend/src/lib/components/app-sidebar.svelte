@@ -1,6 +1,7 @@
 <script>
   import HouseIcon from '@lucide/svelte/icons/house';
   import UtensilsCrossedIcon from '@lucide/svelte/icons/utensils-crossed';
+  import SquarePlus from '@lucide/svelte/icons/square-plus';
   import BookOpen from 'lucide-svelte/icons/book-open';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import Bookmark from 'lucide-svelte/icons/bookmark';
@@ -32,6 +33,11 @@
       title: 'Import recipe',
       url: '/editor/import',
       icon: Upload
+    },
+    {
+      title: 'Create recipe',
+      url: '/editor/new',
+      icon: SquarePlus
     }
   ];
 </script>
