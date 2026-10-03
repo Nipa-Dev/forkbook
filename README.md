@@ -4,35 +4,24 @@
   Self-hosted recipe and cooking notebook
 </p>
 
-## Quick Start with Podman
-
-The easiest way to get started is using the `podman-compose.yaml`
+## Quick Start
 
 1. Set up environment variables
 
 Create a `.env` file in the project root:
 
-Create a secret key: `openssl rand -hex 32`
-
-```bash
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=admin
-POSTGRES_DB=recipebook
-
-SECRET_KEY="SECRET-KEY"
-REFRESH_SECRET_KEY="ANOTHER-SECRET-KEY"
-ALGORITHM="HS256"
+```text
+ALGORITHM=RS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+EMAIL_BIDX_SECRET=change_me_email_bidx_secret
 
-EMAIL_BIDX_SECRET="YET-ANOTHER-SECRET-KEY"
+JWT_KID=dev-key-1
+
+PRIVATE_KEY_PATH="./keys/private_key.pem"
+PUBLIC_KEY_PATH="./keys/public_key.pem"
 ```
-2. Start the PostgreSQL database
 
-```bash
-podman compose up -d
-```
-
-3. Run the backend
+2. Run the backend
 
 ```bash
 cd backend
@@ -41,7 +30,7 @@ uv run run.py
 
 The API will be available at `http://localhost:8000`
 
-4. Install and run the frontend
+3. Install and run the frontend
 
 ```bash
 cd frontend
@@ -63,6 +52,11 @@ See `backend/app/utils/config.py` for additional configuration options.
 
 ```bash
 ruff format .
+```
+
+### Running tests in backend
+```
+uv run pytest
 ```
 
 ### Linting and Formatting (Frontend)
