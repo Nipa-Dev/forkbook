@@ -73,7 +73,7 @@
 
             <Card.Content class="space-y-1">
               <div class="flex flex-wrap gap-2 items-center">
-                {#each recipe.tags ?? [] as tag (tag)}
+                {#each recipe.tags ?? [] as tag}
                   <Badge variant="secondary">
                     {tag}
                   </Badge>

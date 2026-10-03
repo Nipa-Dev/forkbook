@@ -40,19 +40,36 @@
   }
 
   let form = $state({
-    title: data.recipe?.title ?? '',
-    description: data.recipe?.description ?? '',
-    cook_time_minutes: data.recipe?.cook_time_minutes ?? '',
-    prep_time_minutes: data.recipe?.prep_time_minutes ?? '',
-    servings: data.recipe?.servings ?? '',
-    tags: toList(data.recipe?.tags),
-    equipment: toList(data.recipe?.equipment),
-    notes: toLines(data.recipe?.notes),
-    storage: toLines(data.recipe?.storage),
-    difficulty: data.recipe?.difficulty ?? 'easy'
+    title: '',
+    description: '',
+    cook_time_minutes: '',
+    prep_time_minutes: '',
+    servings: '',
+    tags: '',
+    equipment: '',
+    notes: '',
+    storage: '',
+    difficulty: 'easy'
   });
 
-  let components = $state(componentsForEditor(data.recipe?.components));
+  let components = $state([emptyComponent()]);
+
+  $effect(() => {
+    form = {
+      title: data.recipe?.title ?? '',
+      description: data.recipe?.description ?? '',
+      cook_time_minutes: data.recipe?.cook_time_minutes ?? '',
+      prep_time_minutes: data.recipe?.prep_time_minutes ?? '',
+      servings: data.recipe?.servings ?? '',
+      tags: toList(data.recipe?.tags),
+      equipment: toList(data.recipe?.equipment),
+      notes: toLines(data.recipe?.notes),
+      storage: toLines(data.recipe?.storage),
+      difficulty: data.recipe?.difficulty ?? 'easy'
+    };
+
+    components = componentsForEditor(data.recipe?.components);
+  });
 
   const difficultyOptions = [
     { value: 'easy', label: 'Easy' },
@@ -66,7 +83,6 @@
 
   const payloadComponents = $derived(components);
 </script>
-
 <form
   method="POST"
   action="?/save"
