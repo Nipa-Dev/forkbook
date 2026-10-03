@@ -2,7 +2,6 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Query
-from psycopg.rows import dict_row
 from pydantic import BaseModel
 
 from app.schemas.responses import StatusResponse
@@ -22,37 +21,46 @@ class ToggleFlagRequest(BaseModel):
     flag_type: RecipeFlagType = RecipeFlagType.BOOKMARK
 
 
+import json
+
+
 @router.get("/saved")
 async def get_user_saved_recipes(
     conn: GetConnection,
     current_user: CurrentUser,
     flag_type: RecipeFlagType | None = Query(None),
 ):
-    async with conn.transaction():
-        async with conn.cursor(row_factory=dict_row) as cur:
-            query = """
-                SELECT
-                    rf.id AS flag_id,
-                    rf.recipe_id,
-                    rf.flag_type,
-                    r.*
-                FROM recipe_flags rf
-                JOIN recipes r ON r.id = rf.recipe_id
-                WHERE rf.user_id = %s
-            """
+    query = """
+        SELECT
+            rf.id AS flag_id,
+            rf.recipe_id,
+            rf.flag_type,
+            r.*
+        FROM recipe_flags rf
+        JOIN recipes r ON r.id = rf.recipe_id
+        WHERE rf.user_id = ?
+    """
+    params = [str(current_user.user_id)]
 
-            params = [current_user.user_id]
+    if flag_type:
+        query += " AND rf.flag_type = ?"
+        params.append(flag_type.value)
 
-            if flag_type:
-                query += " AND rf.flag_type = %s"
-                params.append(flag_type.value)
+    query += " ORDER BY rf.created_at DESC"
 
-            query += " ORDER BY rf.created_at DESC"
+    async with conn.execute(query, params) as cur:
+        rows = await cur.fetchall()
 
-            await cur.execute(query, params)
-            data = await cur.fetchall()
+    result = []
+    for row in rows:
+        recipe = dict(row)
+        recipe["tags"] = json.loads(recipe["tags"])
+        recipe["equipment"] = json.loads(recipe["equipment"])
+        recipe["notes"] = json.loads(recipe["notes"])
+        recipe["storage"] = json.loads(recipe["storage"])
+        result.append(recipe)
 
-        return data
+    return result
 
 
 @router.post("/{recipe_id}/toggle-saved", response_model=StatusResponse)
@@ -62,26 +70,36 @@ async def toggle_flag(
     conn: GetConnection,
     current_user: CurrentUser,
 ):
-    async with conn.transaction():
-        async with conn.cursor(row_factory=dict_row) as cur:
-            if payload.active:
-                await cur.execute(
-                    """
-                    INSERT INTO recipe_flags (id, user_id, recipe_id, flag_type)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (user_id, recipe_id, flag_type) DO NOTHING
-                    """,
-                    (uuid4(), current_user.user_id, recipe_id, payload.flag_type.value),
-                )
-                message = f"Recipe successfully marked as {payload.flag_type.value}."
-            else:
-                await cur.execute(
-                    """
-                    DELETE FROM recipe_flags
-                    WHERE user_id = %s AND recipe_id = %s AND flag_type = %s
-                    """,
-                    (current_user.user_id, recipe_id, payload.flag_type.value),
-                )
-                message = f"Recipe {payload.flag_type.value} flag removed."
+    if payload.active:
+        await conn.execute(
+            """
+            INSERT INTO recipe_flags (id, user_id, recipe_id, flag_type)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (user_id, recipe_id, flag_type) DO NOTHING
+            """,
+            (
+                str(uuid4()),
+                str(current_user.user_id),
+                str(recipe_id),
+                payload.flag_type.value,
+            ),
+        )
+        message = f"Recipe successfully marked as {payload.flag_type.value}."
 
-        return {"message": message}
+    else:
+        await conn.execute(
+            """
+            DELETE FROM recipe_flags
+            WHERE user_id = ? AND recipe_id = ? AND flag_type = ?
+            """,
+            (
+                str(current_user.user_id),
+                str(recipe_id),
+                payload.flag_type.value,
+            ),
+        )
+        message = f"Recipe {payload.flag_type.value} flag removed."
+
+    await conn.commit()
+
+    return {"message": message}

@@ -8,7 +8,6 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
-from psycopg.rows import dict_row
 from pwdlib import PasswordHash
 
 from app.schemas.user import UserInDB, UserRead
@@ -65,30 +64,37 @@ async def get_user_by_id(
     conn: GetConnection,
     user_id: UUID,
 ) -> UserInDB | None:
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute("SELECT * FROM users where user_id = %s", (user_id,))
+    async with conn.execute(
+        "SELECT * FROM users WHERE user_id = ?",
+        (str(user_id),),
+    ) as cur:
         row = await cur.fetchone()
-        return UserInDB(**row) if row else None
+
+    return UserInDB(**row) if row else None
 
 
 async def get_user_by_username(
     conn: GetConnection, username_normalized: str
 ) -> UserInDB | None:
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(
-            "SELECT * FROM users WHERE username_normalized = %s", (username_normalized,)
-        )
+    async with conn.execute(
+        "SELECT * FROM users WHERE username_normalized = ?",
+        (username_normalized,),
+    ) as cur:
         row = await cur.fetchone()
-        return UserInDB(**row) if row else None
+
+    return UserInDB(**row) if row else None
 
 
 async def get_user_by_email_bidx(
-    conn: GetConnection, email_bidx: str
+    conn: GetConnection, email_bidx: bytes
 ) -> UserInDB | None:
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute("SELECT * FROM users WHERE email_bidx = %s", (email_bidx,))
-        row = await cur.fetchone()
-        return UserInDB(**row) if row else None
+    async with conn.execute(
+        "SELECT * FROM users WHERE email_bidx = ?",
+        (email_bidx,),
+    ) as cursor:
+        row = await cursor.fetchone()
+
+    return UserInDB(**row) if row else None
 
 
 async def authenticate_user(

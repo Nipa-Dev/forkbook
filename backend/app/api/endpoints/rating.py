@@ -3,7 +3,6 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
-from psycopg.rows import dict_row
 
 from app.schemas.rating import RecipeRatingCreate
 from app.schemas.user import UserInDB
@@ -25,22 +24,39 @@ async def add_or_update_rating(
     rating_data: RecipeRatingCreate,
 ):
     query = """
-        INSERT INTO recipe_ratings (id, recipe_id, user_id, rating, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, NOW(), NOW())
+        INSERT INTO recipe_ratings (
+            id, recipe_id, user_id, rating, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (recipe_id, user_id)
         DO UPDATE SET
-            rating = EXCLUDED.rating,
-            updated_at = NOW()
+            rating = excluded.rating,
+            updated_at = CURRENT_TIMESTAMP
         RETURNING *;
     """
-    async with conn.cursor(row_factory=dict_row) as cur:
-        try:
-            await cur.execute(
-                query,
-                (str(uuid4()), recipe_id, current_user.user_id, rating_data.rating),
-            )
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        async with conn.execute(
+            query,
+            (
+                str(uuid4()),
+                str(recipe_id),
+                str(current_user.user_id),
+                rating_data.rating,
+            ),
+        ) as cur:
+            rating = await cur.fetchone()
+
+        await conn.commit()
+
+        return dict(rating) if rating else None
+
+    except Exception:
+        await conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to save rating",
+        )
 
 
 @router.delete("/{recipe_id}")

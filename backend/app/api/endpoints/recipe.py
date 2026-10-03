@@ -1,10 +1,10 @@
 from pathlib import Path
 from uuid import UUID, uuid4
+import json
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
-from psycopg.rows import dict_row
 
-from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate
+from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate, RecipeComponent
 from app.services.recipes import (
     create_recipe,
     fetch_recipe,
@@ -33,42 +33,41 @@ async def get_recipes(
 ):
     offset = (page - 1) * page_size
 
-    async with conn.cursor(row_factory=dict_row) as cur:
-        conditions = []
-        params = []
+    conditions = []
+    params = []
 
-        if tag:
-            conditions.append("tags && %s::text[]")
-            params.append(tag)
+    if search:
+        conditions.append("LOWER(title) LIKE LOWER(?)")
+        params.append(f"%{search}%")
 
-        if search:
-            conditions.append("title ILIKE %s")
-            params.append(f"%{search}%")
+    where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
 
-        where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-
-        # Total count
-        count_query = f"SELECT COUNT(*) AS total FROM recipes{where_clause}"
-        await cur.execute(count_query, params)
+    async with conn.execute(
+        f"SELECT COUNT(*) AS total FROM recipes{where_clause}",
+        params,
+    ) as cur:
         row = await cur.fetchone()
-        total = row["total"] if row else 0
 
-        id_query = f"""
-            SELECT id
-            FROM recipes_with_ratings
-            {where_clause}
-            ORDER BY title
-            LIMIT %s OFFSET %s
-        """
-        await cur.execute(id_query, [*params, page_size, offset])
+    total = row["total"] if row else 0
+
+    async with conn.execute(
+        f"""
+        SELECT id
+        FROM recipes_with_ratings
+        {where_clause}
+        ORDER BY title
+        LIMIT ? OFFSET ?
+        """,
+        [*params, page_size, offset],
+    ) as cur:
         rows = await cur.fetchall()
 
-        result: list[RecipeRead] = []
-        for row in rows:
-            recipe = await fetch_recipe(cur, row["id"])
-            if recipe:
-                result.append(recipe)
+    result: list[RecipeRead] = []
 
+    for row in rows:
+        recipe = await fetch_recipe(conn, row["id"])
+        if recipe:
+            result.append(recipe)
     return PaginatedRecipes(
         items=result,
         total=total,
@@ -135,24 +134,30 @@ async def list_recipe_ids(conn: GetConnection):
 
 @router.get("/{recipe_id}", response_model=RecipeRead)
 async def get_recipe(conn: GetConnection, recipe_id: UUID):
-    async with conn.cursor(row_factory=dict_row) as cur:
-        recipe = await fetch_recipe(cur, recipe_id)
-        if not recipe:
-            raise HTTPException(status_code=404, detail="Recipe not found")
+    recipe = await fetch_recipe(conn, recipe_id)
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
 
     return recipe
 
 
 @router.delete("/{recipe_id}")
-async def delete_recipe(conn: GetConnection, recipe_id: str):
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(
-            "DELETE FROM recipes WHERE id = %s",
-            (recipe_id,),
-        )
-
+async def delete_recipe(
+    conn: GetConnection,
+    recipe_id: str,
+):
+    async with conn.execute(
+        "DELETE FROM recipes WHERE id = ?",
+        (recipe_id,),
+    ) as cur:
         if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Recipe not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Recipe not found",
+            )
+
+    await conn.commit()
 
     return {"deleted_id": recipe_id}
 
@@ -173,42 +178,55 @@ async def update_recipe(
 
     components = updates.pop("components", None)
 
-    if updates:
-        fields = [f"{key} = %s" for key in updates.keys()]
-        values = list(updates.values())
+    try:
+        if updates:
+            fields = []
+            values = []
+            for key, val in updates.items():
+                fields.append(f"{key} = ?")
+                # Serialize list/dict fields to JSON strings
+                if isinstance(val, (list, dict)):
+                    values.append(json.dumps(val))
+                else:
+                    values.append(val)
 
-    async with conn.transaction():
-        async with conn.cursor(row_factory=dict_row) as cur:
-            if updates:
-                values.append(recipe_id)
-                query = f"""
-                    UPDATE recipes
-                    SET {", ".join(fields)}
-                    WHERE id = %s
-                    RETURNING id
-                """
-                await cur.execute(query, values)
+            values.append(str(recipe_id))
+            query = f"""
+                UPDATE recipes
+                SET {", ".join(fields)}
+                WHERE id = ?
+                RETURNING id
+            """
+
+            async with conn.execute(query, values) as cur:
                 if not await cur.fetchone():
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail="Recipe not found",
                     )
 
-            if components is not None:
-                await cur.execute(
-                    "DELETE FROM recipe_components WHERE recipe_id = %s",
-                    (recipe_id,),
-                )
-                await insert_recipe_components(cur, recipe_id, components)
+        if components is not None:
+            await conn.execute(
+                "DELETE FROM recipe_components WHERE recipe_id = ?",
+                (str(recipe_id),),
+            )
+            component_models = [RecipeComponent(**comp) if isinstance(comp, dict) else comp for comp in components]
+            await insert_recipe_components(conn, recipe_id, component_models)
 
-            updated_recipe = await fetch_recipe(cur, recipe_id)
-            if not updated_recipe:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Recipe not found",
-                )
+        updated_recipe = await fetch_recipe(conn, recipe_id)
 
-            return updated_recipe
+        if not updated_recipe:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Recipe not found",
+            )
+
+        await conn.commit()
+        return updated_recipe
+
+    except Exception:
+        await conn.rollback()
+        raise
 
 
 @router.put("/{recipe_id}/image", response_model=RecipeRead)
@@ -219,15 +237,14 @@ async def update_recipe_image(
 ):
     FRONTEND_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-    async with conn.cursor() as cur:
-        await cur.execute(
-            """
-            SELECT image_hero_filename, image_thumb_filename
-            FROM recipes
-            WHERE id = %s
-            """,
-            (recipe_id,),
-        )
+    async with conn.execute(
+        """
+        SELECT image_hero_filename, image_thumb_filename
+        FROM recipes
+        WHERE id = ?
+        """,
+        (str(recipe_id),),
+    ) as cur:
         row = await cur.fetchone()
 
     if not row:
@@ -263,21 +280,21 @@ async def update_recipe_image(
             detail="Invalid image file",
         )
 
-    async with conn.cursor() as cur:
-        await cur.execute(
-            """
-            UPDATE recipes
-            SET
-                image_hero_filename = %s,
-                image_thumb_filename = %s
-            WHERE id = %s
-            """,
-            (
-                hero_filename,
-                thumbnail_filename,
-                recipe_id,
-            ),
-        )
+    await conn.execute(
+        """
+        UPDATE recipes
+        SET
+            image_hero_filename = ?,
+            image_thumb_filename = ?
+        WHERE id = ?
+        """,
+        (
+            hero_filename,
+            thumbnail_filename,
+            str(recipe_id),
+        ),
+    )
+    await conn.commit()
 
     if old_hero_filename:
         (FRONTEND_IMAGES_DIR / old_hero_filename).unlink(missing_ok=True)

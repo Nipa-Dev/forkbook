@@ -16,12 +16,15 @@ dependencies = [
     "numpy>=2.5.0",
     "imagecodecs>=2026.6.6",
     "cryptography>=49.0.0",
+    "aiosqlite>=0.22.1",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "niquests>=3.18.2",
     "pillow>=12.2.0",
+    "pytest>=9.1.1",
 ]
 
 [tool.ruff.lint]
@@ -29,3 +32,6 @@ select = [
     "I",
     "F",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = "."

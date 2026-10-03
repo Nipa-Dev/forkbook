@@ -1,18 +1,17 @@
 from typing import Annotated, AsyncGenerator, TypedDict
 
+import aiosqlite
 from fastapi import Depends, Request
-from psycopg import AsyncConnection
-from psycopg_pool import AsyncConnectionPool
 
 
 class State(TypedDict):
-    pool: AsyncConnectionPool
+    db: aiosqlite.Connection
 
 
-async def _get_conn(request: Request) -> AsyncGenerator[AsyncConnection, None]:
-    """Return a connection from database pool."""
-    async with request.state["pool"].connection() as conn:
-        yield conn
+async def _get_conn(request: Request) -> AsyncGenerator[aiosqlite.Connection, None]:
+    """Return the SQLite database connection."""
+
+    yield request.app.state.db
 
 
-GetConnection = Annotated[AsyncConnection, Depends(_get_conn)]
+GetConnection = Annotated[aiosqlite.Connection, Depends(_get_conn)]

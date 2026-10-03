@@ -1,11 +1,11 @@
+import sqlite3
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from psycopg.errors import UniqueViolation
 
 from app.schemas.auth import Token
 from app.schemas.user import UserInDB, UserRegister
@@ -49,53 +49,65 @@ async def login_for_access_token(
 
 
 @router.post("/add-user", status_code=status.HTTP_201_CREATED)
-async def create_user(conn: GetConnection, user_in: UserRegister):
+async def create_user(
+    conn: GetConnection,
+    user_in: UserRegister,
+):
     hashed_password = get_password_hash(user_in.password)
+
     user_email_normalized = auth.normalize_email(user_in.email)
     email_blind_index = auth.compute_email_blind_index(user_email_normalized)
+
     mock_encrypted_bytes = f"ENC_{user_in.email}".encode()
 
     user_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
     username_normalized = auth.normalize_username(user_in.username)
 
     query = """
         INSERT INTO users (
-            user_id, username, username_normalized,
-            email_bidx, email_enc, hashed_password,
-            key_version, created_at, updated_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            user_id,
+            username,
+            username_normalized,
+            email_bidx,
+            email_enc,
+            hashed_password,
+            key_version
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         RETURNING user_id, username;
     """
+
     try:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                query,
-                (
-                    user_id,
-                    user_in.username,
-                    username_normalized,
-                    email_blind_index,
-                    mock_encrypted_bytes,
-                    hashed_password,
-                    1,  # key_version
-                    now,
-                    now,
-                ),
-            )
+        async with conn.execute(
+            query,
+            (
+                str(user_id),
+                user_in.username,
+                username_normalized,
+                email_blind_index,
+                mock_encrypted_bytes,
+                hashed_password,
+                1,
+            ),
+        ) as cur:
             new_user = await cur.fetchone()
-            if new_user:
-                return {
-                    "status": "success",
-                    "user_id": str(new_user[0]),
-                    "username": new_user[1],
-                }
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user record",
-                )
-    except UniqueViolation:
+
+        await conn.commit()
+
+        if new_user:
+            return {
+                "status": "success",
+                "user_id": new_user["user_id"],
+                "username": new_user["username"],
+            }
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user record",
+        )
+
+    except sqlite3.IntegrityError:
+        await conn.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Username or email is already taken.",

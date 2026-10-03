@@ -1,8 +1,7 @@
+import json
 import re
 import unicodedata
 from uuid import UUID, uuid4
-
-from psycopg.rows import dict_row
 
 from app.schemas.recipe import (
     Ingredient,
@@ -28,67 +27,71 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
     recipe_id = uuid4()
 
     short_hash = str(recipe_id).split("-")[0]
-
     base_slug = slugify(recipe.title)
     slug = f"{base_slug}-{short_hash}" if base_slug else short_hash
-    async with conn.transaction():
-        async with conn.cursor(row_factory=dict_row) as cur:
-            await cur.execute(
-                """
-                INSERT INTO recipes (
-                    id, owner_id, title, description, slug,
-                    tags, cook_time_minutes, prep_time_minutes, servings, difficulty,
-                    image_hero_filename, image_thumb_filename,
-                    equipment, notes, storage
-                )
-                VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                )
-                """,
-                (
-                    recipe_id,
-                    None,
-                    recipe.title,
-                    recipe.description,
-                    slug,
-                    recipe.tags,
-                    recipe.cook_time_minutes,
-                    recipe.prep_time_minutes,
-                    recipe.servings,
-                    recipe.difficulty,
-                    recipe.image_hero_filename,
-                    recipe.image_thumb_filename,
-                    recipe.equipment,
-                    recipe.notes,
-                    recipe.storage,
-                ),
+
+    try:
+        await conn.execute(
+            """
+            INSERT INTO recipes (
+                id, owner_id, title, description, slug,
+                tags, cook_time_minutes, prep_time_minutes, servings, difficulty,
+                image_hero_filename, image_thumb_filename,
+                equipment, notes, storage
             )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                str(recipe_id),
+                None,
+                recipe.title,
+                recipe.description,
+                slug,
+                json.dumps(recipe.tags),
+                recipe.cook_time_minutes,
+                recipe.prep_time_minutes,
+                recipe.servings,
+                recipe.difficulty,
+                recipe.image_hero_filename,
+                recipe.image_thumb_filename,
+                json.dumps(recipe.equipment),
+                json.dumps(recipe.notes),
+                json.dumps(recipe.storage),
+            ),
+        )
 
-            if recipe.components:
-                await insert_recipe_components(cur, recipe_id, recipe.components)
+        if recipe.components:
+            await insert_recipe_components(conn, recipe_id, recipe.components)
 
-            created_recipe = await fetch_recipe(cur, recipe_id)
-            if not created_recipe:
-                raise RuntimeError("Failed to retrieve created recipe")
+        created_recipe = await fetch_recipe(conn, recipe_id)
 
-            return created_recipe
+        if not created_recipe:
+            raise RuntimeError("Failed to retrieve created recipe")
+
+        await conn.commit()
+        return created_recipe
+
+    except Exception:
+        await conn.rollback()
+        raise
 
 
 async def insert_recipe_components(
-    cur, recipe_id: UUID, components: list[RecipeComponent]
+    conn,
+    recipe_id: UUID,
+    components: list[RecipeComponent],
 ) -> None:
-
     for comp_idx, comp in enumerate(components, start=1):
         comp_id = uuid4()
 
-        await cur.execute(
+        await conn.execute(
             """
             INSERT INTO recipe_components (id, recipe_id, name, component_order)
-            VALUES (%s, %s, %s, %s)
+            VALUES (?, ?, ?, ?)
             """,
             (
-                comp_id,
-                recipe_id,
+                str(comp_id),
+                str(recipe_id),
                 comp.name or "Main",
                 comp.component_order or comp_idx,
             ),
@@ -105,6 +108,7 @@ async def insert_recipe_components(
 
             if raw_text and not name:
                 parsed_list = parse_ingredients(raw_text)
+
                 if parsed_list:
                     parsed = parsed_list[0]
                     name = parsed.name
@@ -112,14 +116,16 @@ async def insert_recipe_components(
                     amount_value = parsed.amount_value
                     unit = parsed.unit
 
-            await cur.execute(
+            await conn.execute(
                 """
-                INSERT INTO ingredients (id, component_id, raw, name, amount, amount_value, unit)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO ingredients (
+                    id, component_id, raw, name, amount, amount_value, unit
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    ing_id,
-                    comp_id,
+                    str(ing_id),
+                    str(comp_id),
                     raw_text,
                     name,
                     amount,
@@ -131,14 +137,16 @@ async def insert_recipe_components(
         for step_idx, step in enumerate(comp.steps, start=1):
             step_id = uuid4()
 
-            await cur.execute(
+            await conn.execute(
                 """
-                INSERT INTO steps (id, component_id, step_order, description, timer_seconds)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO steps (
+                    id, component_id, step_order, description, timer_seconds
+                )
+                VALUES (?, ?, ?, ?, ?)
                 """,
                 (
-                    step_id,
-                    comp_id,
+                    str(step_id),
+                    str(comp_id),
                     step.step_order or step_idx,
                     step.description or "",
                     step.timer_seconds,
@@ -147,69 +155,79 @@ async def insert_recipe_components(
 
 
 async def get_recipe_ids(conn) -> list[str]:
-    async with conn.cursor(row_factory=dict_row) as cur:
-        await cur.execute(
-            """
-            SELECT id
-            FROM recipes
-            ORDER BY created_at DESC
-            """
-        )
+    async with conn.execute(
+        """
+        SELECT id
+        FROM recipes
+        ORDER BY created_at DESC
+        """
+    ) as cur:
         rows = await cur.fetchall()
 
-    return [str(row["id"]) for row in rows]
+    return [row["id"] for row in rows]
 
 
-async def fetch_recipe(cur, recipe_id: UUID) -> RecipeRead | None:
-    await cur.execute(
-        "SELECT * FROM recipes_with_ratings WHERE id = %s",
-        (recipe_id,),
-    )
-    recipe = await cur.fetchone()
+async def fetch_recipe(
+    conn,
+    recipe_id: UUID,
+) -> RecipeRead | None:
+    async with conn.execute(
+        "SELECT * FROM recipes_with_ratings WHERE id = ?",
+        (str(recipe_id),),
+    ) as cur:
+        recipe = await cur.fetchone()
+
     if not recipe:
         return None
 
-    await cur.execute(
+    async with conn.execute(
         """
         SELECT *
         FROM recipe_components
-        WHERE recipe_id = %s
+        WHERE recipe_id = ?
         ORDER BY component_order
         """,
-        (recipe_id,),
-    )
-    components = await cur.fetchall()
+        (str(recipe_id),),
+    ) as cur:
+        components = await cur.fetchall()
 
     full_components: list[RecipeComponent] = []
+
     for comp in components:
         comp_id = comp["id"]
 
-        await cur.execute(
-            "SELECT * FROM ingredients WHERE component_id = %s",
+        async with conn.execute(
+            "SELECT * FROM ingredients WHERE component_id = ?",
             (comp_id,),
-        )
-        ingredients_raw = await cur.fetchall()
+        ) as cur:
+            ingredients_raw = await cur.fetchall()
 
-        await cur.execute(
+        async with conn.execute(
             """
             SELECT *
             FROM steps
-            WHERE component_id = %s
+            WHERE component_id = ?
             ORDER BY step_order
             """,
             (comp_id,),
-        )
-        steps_raw = await cur.fetchall()
+        ) as cur:
+            steps_raw = await cur.fetchall()
 
         full_components.append(
             RecipeComponent(
-                **comp,
-                ingredients=[Ingredient(**i) for i in ingredients_raw],
-                steps=[Step(**s) for s in steps_raw],
+                **dict(comp),
+                ingredients=[Ingredient(**dict(i)) for i in ingredients_raw],
+                steps=[Step(**dict(s)) for s in steps_raw],
             )
         )
 
+    recipe_data = dict(recipe)
+
+    recipe_data["tags"] = json.loads(recipe_data["tags"])
+    recipe_data["equipment"] = json.loads(recipe_data["equipment"])
+    recipe_data["notes"] = json.loads(recipe_data["notes"])
+    recipe_data["storage"] = json.loads(recipe_data["storage"])
     return RecipeRead(
-        **recipe,
+        **recipe_data,
         components=full_components,
     )
