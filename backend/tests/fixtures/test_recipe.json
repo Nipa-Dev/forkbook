@@ -1,0 +1,36 @@
+{
+  "title": "Classic test recipe",
+  "description": "Example test recipe.",
+  "components": [
+    {
+      "name": "Batter",
+      "component_order": 1,
+      "ingredients": [
+        {
+          "raw": "1 cup flour",
+          "name": "Flour",
+          "amount": "1",
+          "amount_value": 1,
+          "unit": "cup"
+        }
+      ],
+      "steps": [
+        {
+          "step_order": 1,
+          "description": "Mix all ingredients together.",
+          "timer_seconds": 60
+        }
+      ]
+    }
+  ],
+  "tags": ["breakfast", "easy", "test"],
+  "cook_time_minutes": 10,
+  "prep_time_minutes": 5,
+  "servings": 4,
+  "difficulty": "Easy",
+  "image_hero_filename": "",
+  "image_thumb_filename": "",
+  "equipment": ["Frying Pan", "Spatula"],
+  "notes": ["Example note."],
+  "storage": ["Refrigerate up to 3 days."]
+}
