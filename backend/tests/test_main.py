@@ -8,6 +8,7 @@ async def test_docs(client):
     response = await client.get("/docs")
     assert response.status_code == 200
 
+
 @pytest.mark.anyio
 async def test_openapi(client):
     response = await client.get("/openapi.json")

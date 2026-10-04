@@ -1,10 +1,16 @@
+import json
 from pathlib import Path
 from uuid import UUID, uuid4
-import json
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 
-from app.schemas.recipe import PaginatedRecipes, RecipeCreate, RecipeRead, RecipeUpdate, RecipeComponent
+from app.schemas.recipe import (
+    PaginatedRecipes,
+    RecipeComponent,
+    RecipeCreate,
+    RecipeRead,
+    RecipeUpdate,
+)
 from app.services.recipes import (
     create_recipe,
     fetch_recipe,
@@ -210,7 +216,10 @@ async def update_recipe(
                 "DELETE FROM recipe_components WHERE recipe_id = ?",
                 (str(recipe_id),),
             )
-            component_models = [RecipeComponent(**comp) if isinstance(comp, dict) else comp for comp in components]
+            component_models = [
+                RecipeComponent(**comp) if isinstance(comp, dict) else comp
+                for comp in components
+            ]
             await insert_recipe_components(conn, recipe_id, component_models)
 
         updated_recipe = await fetch_recipe(conn, recipe_id)

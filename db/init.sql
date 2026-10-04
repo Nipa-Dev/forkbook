@@ -197,21 +197,21 @@ JOIN recipe_rating_stats v
     ON r.id = v.recipe_id;
 
 
-CREATE INDEX IF NOT EXISTS idx_refresh_user_id 
+CREATE INDEX IF NOT EXISTS idx_refresh_user_id
     ON refresh_token_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_refresh_token_hash 
+CREATE INDEX IF NOT EXISTS idx_refresh_token_hash
     ON refresh_token_sessions(token_hash);
-CREATE INDEX IF NOT EXISTS idx_ingredients_name 
+CREATE INDEX IF NOT EXISTS idx_ingredients_name
     ON ingredients(name);
-CREATE INDEX IF NOT EXISTS idx_ingredients_component 
+CREATE INDEX IF NOT EXISTS idx_ingredients_component
     ON ingredients(component_id);
-CREATE INDEX IF NOT EXISTS idx_components_recipe_order 
+CREATE INDEX IF NOT EXISTS idx_components_recipe_order
     ON recipe_components(recipe_id, component_order);
-CREATE INDEX IF NOT EXISTS idx_steps_component 
+CREATE INDEX IF NOT EXISTS idx_steps_component
     ON steps(component_id);
-CREATE INDEX IF NOT EXISTS idx_ratings_recipe 
+CREATE INDEX IF NOT EXISTS idx_ratings_recipe
     ON recipe_ratings(recipe_id);
-CREATE INDEX IF NOT EXISTS idx_ratings_user 
+CREATE INDEX IF NOT EXISTS idx_ratings_user
     ON recipe_ratings(user_id);
-CREATE INDEX IF NOT EXISTS idx_recipes_owner 
+CREATE INDEX IF NOT EXISTS idx_recipes_owner
     ON recipes(owner_id);

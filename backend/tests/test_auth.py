@@ -1,4 +1,5 @@
 import pytest
+
 from app.utils.auth import decrypt_email
 
 
@@ -10,7 +11,7 @@ async def registered_user(client):
         "email": "authuser@example.com",
         "password": "securepassword123",
     }
-    
+
     response = await client.post("/auth/add-user", json=credentials)
     assert response.status_code == 201
     return credentials
@@ -66,6 +67,7 @@ async def test_login_invalid_password(client, registered_user):
 
     assert response.status_code == 401
     assert response.headers["WWW-Authenticate"] == "Bearer"
+
 
 @pytest.mark.anyio
 async def test_protected_route(auth_client):

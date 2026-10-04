@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -19,9 +20,6 @@ class RecipeFlagType(str, Enum):
 class ToggleFlagRequest(BaseModel):
     active: bool
     flag_type: RecipeFlagType = RecipeFlagType.BOOKMARK
-
-
-import json
 
 
 @router.get("/saved")

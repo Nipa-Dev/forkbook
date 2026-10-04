@@ -38,6 +38,7 @@ async def client(test_db):
 
     app.dependency_overrides.clear()
 
+
 @pytest.fixture
 async def auth_client(client):
     """AsyncClient pre-configured with a valid Bearer token header."""
@@ -46,14 +47,17 @@ async def auth_client(client):
         "email": "user@example.com",
         "password": "securepassword123",
     }
-    
+
     await client.post("/auth/add-user", json=credentials)
-    
-    login_res = await client.post("/auth/token", data={
-        "username": credentials["username"],
-        "password": credentials["password"],
-    })
+
+    login_res = await client.post(
+        "/auth/token",
+        data={
+            "username": credentials["username"],
+            "password": credentials["password"],
+        },
+    )
     token = login_res.json()["access_token"]
-    
+
     client.headers["Authorization"] = f"Bearer {token}"
     return client
