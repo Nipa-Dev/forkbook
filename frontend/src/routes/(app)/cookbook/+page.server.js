@@ -19,8 +19,8 @@ export async function load({ fetch, cookies }) {
     return { recipes };
   } catch (error) {
     console.error(error);
-    const statusCode = err?.status || err?.response?.status || 500;
-    const errorMessage = err?.message || 'Failed to load saved recipes.';
+    const statusCode = error?.status || error?.response?.status || 500;
+    const errororMessage = error?.message || 'Failed to load saved recipes.';
 
     error(statusCode, errorMessage);
   }

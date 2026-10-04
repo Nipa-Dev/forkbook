@@ -13,26 +13,26 @@
   let current_servings = $state(1);
 
   $effect(() => {
-      userRating = Math.round(recipe.average_rating ?? 0);
-      bookmarkedState = !!recipe.is_bookmarked;
-      madeState = !!recipe.is_made;
-      current_servings = recipe?.servings ?? 1;
-    });
+    userRating = Math.round(recipe.average_rating ?? 0);
+    bookmarkedState = !!recipe.is_bookmarked;
+    madeState = !!recipe.is_made;
+    current_servings = recipe?.servings ?? 1;
+  });
 
-    const getImageUrl = (filename) => `/images/${filename}`;
+  const getImageUrl = (filename) => `/images/${filename}`;
 
-    const initial_servings = $derived(recipe?.servings ?? 1);
-    let multiplier = $derived(initial_servings > 0 ? current_servings / initial_servings : 1);
+  const initial_servings = $derived(recipe?.servings ?? 1);
+  let multiplier = $derived(initial_servings > 0 ? current_servings / initial_servings : 1);
 
-    function scaleAmount(amountValue, amountOriginal) {
-      if (!amountValue) return amountOriginal ?? '';
+  function scaleAmount(amountValue, amountOriginal) {
+    if (!amountValue) return amountOriginal ?? '';
 
-      if (multiplier === 1) {
-        return amountOriginal ?? amountValue;
-      }
-
-      return (amountValue * multiplier).toFixed(2).replace(/\.00$/, '');
+    if (multiplier === 1) {
+      return amountOriginal ?? amountValue;
     }
+
+    return (amountValue * multiplier).toFixed(2).replace(/\.00$/, '');
+  }
 </script>
 
 <article class="max-w-4xl mx-auto px-6 py-8">
