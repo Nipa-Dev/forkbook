@@ -12,17 +12,14 @@ dependencies = [
     "pyjwt>=2.13.0",
     "python-multipart>=0.0.26",
     "uvicorn>=0.41.0",
-    "numpy>=2.5.0",
-    "imagecodecs>=2026.6.6",
     "cryptography>=49.0.0",
     "aiosqlite>=0.22.1",
+    "pillow>=12.3.0",
 ]
 
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
-    "niquests>=3.18.2",
-    "pillow>=12.2.0",
     "pytest>=9.1.1",
 ]
 
