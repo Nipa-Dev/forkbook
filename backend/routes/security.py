@@ -9,12 +9,15 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.schemas.auth import Token
 from backend.schemas.user import UserInDB, UserRegister
-from backend.utils import auth
 from backend.utils.auth import (
     authenticate_user,
+    compute_email_blind_index,
     create_access_token,
+    encrypt_email,
     get_current_active_user,
     get_password_hash,
+    normalize_email,
+    normalize_username,
 )
 from backend.utils.config import settings
 from backend.utils.db import GetConnection
@@ -55,13 +58,13 @@ async def create_user(
 ):
     hashed_password = get_password_hash(user_in.password)
 
-    user_email_normalized = auth.normalize_email(user_in.email)
-    email_blind_index = auth.compute_email_blind_index(user_email_normalized)
+    user_email_normalized = normalize_email(user_in.email)
+    email_blind_index = compute_email_blind_index(user_email_normalized)
 
-    email_encrypted_bytes = auth.encrypt_email(user_in.email)
+    email_encrypted_bytes = encrypt_email(user_in.email)
 
     user_id = uuid.uuid4()
-    username_normalized = auth.normalize_username(user_in.username)
+    username_normalized = normalize_username(user_in.username)
 
     query = """
         INSERT INTO users (
