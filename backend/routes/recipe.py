@@ -4,28 +4,28 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 
-from app.schemas.recipe import (
+from backend.schemas.recipe import (
     PaginatedRecipes,
     RecipeComponent,
     RecipeCreate,
     RecipeRead,
     RecipeUpdate,
 )
-from app.services.recipes import (
+from backend.services.recipes import (
     create_recipe,
     fetch_recipe,
     get_recipe_ids,
     insert_recipe_components,
 )
-from app.utils.config import settings
-from app.utils.db import GetConnection
-from app.utils.images import save_recipe_images
-from app.utils.parser import parse_recipe
+from backend.utils.config import settings
+from backend.utils.db import GetConnection
+from backend.utils.images import save_recipe_images
+from backend.utils.parser import parse_recipe
 
 router = APIRouter()
 
 CURRENT_FILE = Path(__file__).resolve()
-PROJECT_ROOT = CURRENT_FILE.parents[4]
+PROJECT_ROOT = CURRENT_FILE.parents[3]
 FRONTEND_IMAGES_DIR = PROJECT_ROOT / "frontend" / "static" / "images"
 
 

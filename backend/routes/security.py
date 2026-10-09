@@ -7,17 +7,17 @@ from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.schemas.auth import Token
-from app.schemas.user import UserInDB, UserRegister
-from app.utils import auth
-from app.utils.auth import (
+from backend.schemas.auth import Token
+from backend.schemas.user import UserInDB, UserRegister
+from backend.utils import auth
+from backend.utils.auth import (
     authenticate_user,
     create_access_token,
     get_current_active_user,
     get_password_hash,
 )
-from app.utils.config import settings
-from app.utils.db import GetConnection
+from backend.utils.config import settings
+from backend.utils.db import GetConnection
 
 router = APIRouter()
 
@@ -58,7 +58,7 @@ async def create_user(
     user_email_normalized = auth.normalize_email(user_in.email)
     email_blind_index = auth.compute_email_blind_index(user_email_normalized)
 
-    mock_encrypted_bytes = f"ENC_{user_in.email}".encode()
+    email_encrypted_bytes = auth.encrypt_email(user_in.email)
 
     user_id = uuid.uuid4()
     username_normalized = auth.normalize_username(user_in.username)
@@ -85,7 +85,7 @@ async def create_user(
                 user_in.username,
                 username_normalized,
                 email_blind_index,
-                mock_encrypted_bytes,
+                email_encrypted_bytes,
                 hashed_password,
                 1,
             ),

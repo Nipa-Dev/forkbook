@@ -12,11 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from jwt.algorithms import RSAAlgorithm
 
-from app.api.endpoints import rating, recipe, recipe_flags, security
-from app.schemas.responses import StatusResponse
-from app.utils.config import BASE_DIR, get_database_path, settings
+from backend.routes import rating, recipe, recipe_flags, security
+from backend.schemas.responses import StatusResponse
+from backend.utils.config import BASE_DIR, get_database_path, settings
+from backend.utils.logging import setup_logging
 
-logger = logging.getLogger("uvicorn.error")
+logger = logging.getLogger(__name__)
 
 
 class EndpointFilter(logging.Filter):
@@ -38,7 +39,9 @@ async def lifespan(app: FastAPI):
     if schema_path.exists():
         await db.executescript(schema_path.read_text(encoding="utf-8"))
         await db.commit()
-
+        logger.info("Database schema applied")
+    else:
+        logger.info("Database schema file not found; skipping initialization")
     app.state.db = db
 
     try:
@@ -47,6 +50,7 @@ async def lifespan(app: FastAPI):
         await db.close()
 
 
+setup_logging()
 app = FastAPI(lifespan=lifespan)
 
 

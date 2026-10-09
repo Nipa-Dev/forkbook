@@ -1,6 +1,6 @@
 import pytest
 
-from app.utils.config import settings
+from backend.utils.config import settings
 
 
 @pytest.mark.anyio

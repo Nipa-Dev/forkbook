@@ -1,6 +1,6 @@
 import pytest
 
-from app.utils.auth import decrypt_email
+from backend.utils.auth import decrypt_email
 
 
 @pytest.fixture

@@ -1,16 +1,19 @@
 import json
+import logging
 import re
 import unicodedata
 from uuid import UUID, uuid4
 
-from app.schemas.recipe import (
+from backend.schemas.recipe import (
     Ingredient,
     RecipeComponent,
     RecipeCreate,
     RecipeRead,
     Step,
 )
-from app.utils.parser import parse_ingredients
+from backend.utils.parser import parse_ingredients
+
+logger = logging.getLogger(__name__)
 
 
 def slugify(title: str) -> str:
@@ -66,13 +69,16 @@ async def create_recipe(conn, recipe: RecipeCreate) -> RecipeRead:
         created_recipe = await fetch_recipe(conn, recipe_id)
 
         if not created_recipe:
+            logger.error("Database failed to return recipe %s after insert", recipe_id)
             raise RuntimeError("Failed to retrieve created recipe")
 
         await conn.commit()
+        logger.info("New recipe created with id: %s", recipe_id)
         return created_recipe
 
     except Exception:
         await conn.rollback()
+        logger.exception("Failed to create recipe: '%s'", recipe_id)
         raise
 
 

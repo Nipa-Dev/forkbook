@@ -5,20 +5,21 @@ from typing import Annotated
 from uuid import UUID
 
 import jwt
+from cryptography.fernet import Fernet
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from pwdlib import PasswordHash
 
-from app.schemas.user import UserInDB, UserRead
-from app.utils.config import settings
-from app.utils.db import GetConnection
+from backend.schemas.user import UserInDB, UserRead
+from backend.utils.config import settings
+from backend.utils.db import GetConnection
 
 password_hash = PasswordHash.recommended()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 DUMMY_HASH = password_hash.hash("veryfancyindeed")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+FERNET_OBJ = Fernet(settings.FERNET_KEY.get_secret_value().encode("utf-8"))
 
 
 def verify_password(plain_password, hashed_password) -> tuple[bool, str | None]:
@@ -37,27 +38,25 @@ def normalize_email(value: str) -> str:
     return value.strip().casefold()
 
 
-def compute_email_blind_index(email: str) -> str:
+def compute_email_blind_index(email: str) -> bytes:
     normalized = normalize_email(email)
-
-    digest = hmac.new(
-        settings.EMAIL_BIDX_SECRET.encode(),
-        normalized.encode(),
+    return hmac.new(
+        settings.EMAIL_BIDX_SECRET.get_secret_value().encode("utf-8"),
+        normalized.encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()
-
-    return digest
+    ).digest()
 
 
-def decrypt_email(email_enc: bytes | str, key_version: int) -> str:
-    if isinstance(email_enc, bytes):
-        email_str = email_enc.decode("utf-8")
-    else:
-        email_str = str(email_enc)
+def encrypt_email(email: str) -> bytes:
+    """Encrypts normalized email string to raw bytes using Fernet."""
+    normalized = normalize_email(email)
+    return FERNET_OBJ.encrypt(normalized.encode("utf-8"))
 
-    original_email = email_str.removeprefix("ENC_")
 
-    return original_email
+def decrypt_email(email_enc: bytes, key_version: int = 1) -> str:
+    """Decrypts bytes back to plaintext string using Fernet."""
+    decrypted_bytes = FERNET_OBJ.decrypt(email_enc)
+    return decrypted_bytes.decode("utf-8")
 
 
 async def get_user_by_id(
@@ -103,7 +102,6 @@ async def authenticate_user(
     password: str,
 ) -> UserInDB | None:
     identifier = identifier.strip().casefold()
-
     user = None
 
     if "@" in identifier:
@@ -111,11 +109,7 @@ async def authenticate_user(
         user = await get_user_by_email_bidx(conn, email_bidx)
     else:
         username_normalized = normalize_username(identifier)
-
-        user = await get_user_by_username(
-            conn,
-            username_normalized,
-        )
+        user = await get_user_by_username(conn, username_normalized)
 
     if not user:
         verify_password(password, DUMMY_HASH)

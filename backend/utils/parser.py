@@ -1,8 +1,8 @@
 import re
 from fractions import Fraction
 
-from app.exceptions import InvalidRecipeError
-from app.schemas.recipe import Ingredient, RecipeComponent, RecipeCreate, Step
+from backend.exceptions import InvalidRecipeError
+from backend.schemas.recipe import Ingredient, RecipeComponent, RecipeCreate, Step
 
 VALID_UNITS = {
     "g", "gram", "grams",

@@ -25,8 +25,8 @@ class UserBase(BaseModel):
     username: str = Field(min_length=3, max_length=25)
     username_normalized: str
 
-    email_bidx: str
-    email_enc: str
+    email_bidx: bytes
+    email_enc: bytes
 
     key_version: int = Field(gt=0)
 

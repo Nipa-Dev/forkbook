@@ -5,9 +5,9 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from app.schemas.responses import StatusResponse
-from app.utils.db import GetConnection
-from app.utils.dependencies import CurrentUser
+from backend.schemas.responses import StatusResponse
+from backend.utils.db import GetConnection
+from backend.utils.dependencies import CurrentUser
 
 router = APIRouter()
 

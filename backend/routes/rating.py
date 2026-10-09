@@ -4,10 +4,10 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 
-from app.schemas.rating import RecipeRatingCreate
-from app.schemas.user import UserInDB
-from app.utils.auth import get_current_active_user
-from app.utils.db import GetConnection
+from backend.schemas.rating import RecipeRatingCreate
+from backend.schemas.user import UserInDB
+from backend.utils.auth import get_current_active_user
+from backend.utils.db import GetConnection
 
 router = APIRouter()
 

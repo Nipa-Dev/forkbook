@@ -17,6 +17,16 @@ dependencies = [
     "pillow>=12.3.0",
 ]
 
+[project.scripts]
+forkbook = "backend.run:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
@@ -30,4 +40,5 @@ select = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 pythonpath = "."

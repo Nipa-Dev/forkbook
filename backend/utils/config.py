@@ -1,14 +1,19 @@
 import re
 from pathlib import Path
 
-from pydantic import Field, computed_field
+from cryptography.fernet import Fernet
+from pydantic import Field, SecretStr, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 TAG_PATTERN = re.compile(r"^[a-zåäö '\-]+$")
-BASE_DIR = Path(__file__).resolve().parents[3]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    FERNET_KEY: SecretStr = Field(..., description="Key for Fernet encryption")
+    EMAIL_BIDX_SECRET: SecretStr = Field(
+        ..., description="Secret key used for HMAC-SHA256 blind indexing"
+    )
     PRIVATE_KEY_PATH: Path = Field(default=Path("certs/private_key.pem"))
     PUBLIC_KEY_PATH: Path = Field(default=Path("certs/public_key.pem"))
 
@@ -16,8 +21,6 @@ class Settings(BaseSettings):
     ALGORITHM: str = "RS256"
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-
-    EMAIL_BIDX_SECRET: str = ""
 
     TAG_MAX_COUNT: int = 5
     TAG_MAX_LENGTH: int = 15
@@ -44,7 +47,21 @@ class Settings(BaseSettings):
             )
         return self.PUBLIC_KEY_PATH.read_text(encoding="utf-8")
 
-    model_config = SettingsConfigDict(env_file="../.env")
+    @field_validator("FERNET_KEY", mode="after")
+    @classmethod
+    def validate_fernet_key(cls, value: SecretStr) -> SecretStr:
+        """Ensures the FERNET_KEY is a valid, base64-encoded 32-byte key."""
+        raw_key = value.get_secret_value().encode("utf-8")
+        try:
+            # Instantiating Fernet verifies length and base64 encoding
+            Fernet(raw_key)
+        except Exception as e:
+            raise ValueError(
+                "Invalid FERNET_KEY. Key must be a 32-byte URL-safe base64-encoded string."
+            ) from e
+        return value
+
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

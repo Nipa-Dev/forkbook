@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.utils.config import TAG_PATTERN, settings
+from backend.utils.config import TAG_PATTERN, settings
 
 
 def _normalize_tags(v):

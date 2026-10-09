@@ -2,8 +2,8 @@ import aiosqlite
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import BASE_DIR, app
-from app.utils.db import _get_conn
+from backend.main import BASE_DIR, app
+from backend.utils.db import _get_conn
 
 
 @pytest.fixture
