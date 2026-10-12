@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     FERNET_KEY: SecretStr = Field(..., description="Key for Fernet encryption")
     EMAIL_BIDX_SECRET: SecretStr = Field(
-        ..., description="Secret key used for HMAC-SHA256 blind indexing"
+        ..., description="Key for HMAC-SHA256 blind indexing"
     )
     PRIVATE_KEY_PATH: Path = Field(default=Path("certs/private_key.pem"))
     PUBLIC_KEY_PATH: Path = Field(default=Path("certs/public_key.pem"))
