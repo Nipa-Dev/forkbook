@@ -16,6 +16,7 @@ VALID_UNITS = {
     "ml", "milliliter", "milliliters",
     "tbsp", "tablespoon", "tablespoons",
     "tsp", "teaspoon", "teaspoons",
+    "dl",
 
     "pc", "pcs", "piece", "pieces",
     "pinch", "pinches",
