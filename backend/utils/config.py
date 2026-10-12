@@ -68,4 +68,6 @@ settings = Settings()
 
 
 def get_database_path() -> str:
-    return str(BASE_DIR / "data" / "app.db")
+    db_path = BASE_DIR / "data" / "app.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    return str(db_path)
