@@ -31,6 +31,7 @@ include = ["backend*"]
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.ruff.lint]
@@ -42,3 +43,4 @@ select = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = "."
+addopts = "--cov=backend --cov-report=term-missing"
