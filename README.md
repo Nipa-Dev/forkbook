@@ -19,13 +19,20 @@ JWT_KID=dev-key-1
 
 PRIVATE_KEY_PATH="./keys/private_key.pem"
 PUBLIC_KEY_PATH="./keys/public_key.pem"
+FERNET_KEY=your_fernet_key
+```
+
+To generate valid Fernet key, you can run:
+```bash
+uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
 2. Run the backend
 
 ```bash
-cd backend
-uv run run.py
+uv run forkbook
+# or
+uv run backend/run.py
 ```
 
 The API will be available at `http://localhost:8000`
@@ -44,7 +51,7 @@ To create a new user, navigate to `http://localhost:5173/signup`
 
 ## Environment Variables
 
-See `backend/app/utils/config.py` for additional configuration options.
+See `backend/utils/config.py` for additional configuration options.
 
 ## Development
 
